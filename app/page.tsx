@@ -8,16 +8,12 @@ export default function TradingApp() {
   const [dailyGoal, setDailyGoal] = useState(200);
   const [dailyLossLimit, setDailyLossLimit] = useState(-200);
 
-  const [checklist, setChecklist] = useState({
-    level: false,
-    confirmation: false,
-    rr: false,
-  });
-
+  const [checklist, setChecklist] = useState({ level: false, confirmation: false, rr: false });
   const [waiting, setWaiting] = useState(false);
   const [locked, setLocked] = useState(false);
+  const [flash, setFlash] = useState<"" | "green" | "red">("");
+  const [streak, setStreak] = useState(0);
 
-  // daily reset key
   const todayKey = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
@@ -42,34 +38,31 @@ export default function TradingApp() {
     }, 0);
 
     const wins = trades.filter(t => t.pnl > 0).length;
-    const losses = trades.filter(t => t.pnl <= 0).length;
     const winrate = trades.length ? Math.round((wins / trades.length) * 100) : 0;
 
-    return { totalPnL, equity, winrate, wins, losses };
+    return { totalPnL, equity, winrate };
   }, [trades]);
 
-  // Notifications permission
+  useEffect(() => {
+    if (stats.totalPnL >= dailyGoal) {
+      setLocked(true);
+      setFlash("green");
+      setTimeout(() => setFlash(""), 1500);
+      new Notification("🎯 Goal reached – you're done!");
+    }
+    if (stats.totalPnL <= dailyLossLimit) {
+      setLocked(true);
+      setFlash("red");
+      setTimeout(() => setFlash(""), 1500);
+      new Notification("🛑 Loss limit hit – stop.");
+    }
+  }, [stats.totalPnL, dailyGoal, dailyLossLimit]);
+
   useEffect(() => {
     if (Notification.permission !== "granted") {
       Notification.requestPermission();
     }
   }, []);
-
-  // goal lock
-  useEffect(() => {
-    if (stats.totalPnL >= dailyGoal) {
-      new Notification("🎯 Goal reached! Stop trading.");
-      setLocked(true);
-    }
-  }, [stats.totalPnL, dailyGoal]);
-
-  // loss lock
-  useEffect(() => {
-    if (stats.totalPnL <= dailyLossLimit) {
-      new Notification("🛑 Daily loss limit hit. Stop trading.");
-      setLocked(true);
-    }
-  }, [stats.totalPnL, dailyLossLimit]);
 
   const handleAddTrade = () => {
     if (!pnl || locked) return;
@@ -77,91 +70,114 @@ export default function TradingApp() {
     setWaiting(true);
 
     setTimeout(() => {
+      const tradePnL = parseFloat(pnl);
+
       const newTrade = {
-        pnl: parseFloat(pnl),
+        pnl: tradePnL,
         valid: isValid,
         time: new Date().getHours(),
       };
 
-      if (!isValid) {
-        new Notification("⚠️ This trade is INVALID");
+      if (isValid) {
+        setFlash("green");
+        setStreak((s) => s + 1);
+      } else {
+        setFlash("red");
+        setStreak(0);
+        new Notification("⚠️ Invalid trade");
       }
+
+      setTimeout(() => setFlash(""), 800);
 
       setTrades((prev) => [...prev, newTrade]);
       setPnl("");
       setChecklist({ level: false, confirmation: false, rr: false });
       setWaiting(false);
-    }, 2000);
+    }, 1200);
   };
 
   const resetDay = () => {
     setTrades([]);
     setLocked(false);
+    setStreak(0);
     localStorage.removeItem("trades_" + todayKey);
   };
 
-  const chartData = stats.equity.map((v, i) => ({
-    trade: i + 1,
-    equity: v,
-  }));
+  const chartData = stats.equity.map((v, i) => ({ trade: i + 1, equity: v }));
 
   const discipline = trades.length
     ? Math.round((trades.filter(t => t.valid).length / trades.length) * 100)
     : 0;
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial", background: "#111", color: "#eee", minHeight: "100vh" }}>
-      <h1>📈 Trading Dashboard</h1>
+    <div
+      style={{
+        padding: 20,
+        fontFamily: "Arial",
+        background: "#0b0f14",
+        color: "#e6edf3",
+        minHeight: "100vh",
+        transition: "0.3s",
+      }}
+    >
+      <h1 style={{ fontSize: 28 }}>📈 Trading OS</h1>
 
-      {locked && <p style={{ color: "red" }}>🚫 Trading locked</p>}
+      {flash && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: flash === "green" ? "rgba(0,255,150,0.08)" : "rgba(255,0,0,0.08)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
 
-      <h2>🎯 Daily Goal</h2>
-      <input value={dailyGoal} onChange={(e)=>setDailyGoal(Number(e.target.value))} />
+      <h2>💰 ${stats.totalPnL}</h2>
 
-      <h2>🛑 Daily Loss Limit</h2>
-      <input value={dailyLossLimit} onChange={(e)=>setDailyLossLimit(Number(e.target.value))} />
+      <p>
+        🎯 Goal: {dailyGoal} | 🛑 Limit: {dailyLossLimit}
+      </p>
 
-      <p>Current: ${stats.totalPnL}</p>
+      <p>🔥 Streak: {streak}</p>
+      <p>🎯 Discipline: {discipline}%</p>
 
-      <button onClick={resetDay}>🔄 Reset Day</button>
+      {locked && <p style={{ color: "red" }}>🚫 Locked</p>}
 
-      <h2>Checklist</h2>
-      <label><input type="checkbox" checked={checklist.level} onChange={(e)=>setChecklist({...checklist,level:e.target.checked})}/> Level</label><br/>
-      <label><input type="checkbox" checked={checklist.confirmation} onChange={(e)=>setChecklist({...checklist,confirmation:e.target.checked})}/> Confirmation</label><br/>
-      <label><input type="checkbox" checked={checklist.rr} onChange={(e)=>setChecklist({...checklist,rr:e.target.checked})}/> RR ≥ 1:2</label>
+      <div style={{ marginTop: 10 }}>
+        <input value={pnl} onChange={(e) => setPnl(e.target.value)} placeholder="PnL" />
+        <button onClick={handleAddTrade} disabled={waiting || locked}>
+          {waiting ? "..." : "Add"}
+        </button>
+      </div>
 
-      <h3>{isValid ? "✅ VALID" : "❌ INVALID"}</h3>
+      <div style={{ marginTop: 10 }}>
+        <label>
+          <input type="checkbox" checked={checklist.level} onChange={(e)=>setChecklist({...checklist,level:e.target.checked})}/> Level
+        </label>
+        <label>
+          <input type="checkbox" checked={checklist.confirmation} onChange={(e)=>setChecklist({...checklist,confirmation:e.target.checked})}/> Confirm
+        </label>
+        <label>
+          <input type="checkbox" checked={checklist.rr} onChange={(e)=>setChecklist({...checklist,rr:e.target.checked})}/> RR
+        </label>
+      </div>
 
-      <input value={pnl} onChange={(e)=>setPnl(e.target.value)} placeholder="PnL" />
-      <button onClick={handleAddTrade} disabled={waiting || locked}>
-        {waiting ? "Thinking..." : "Add Trade"}
-      </button>
-
-      <hr />
-
-      <h2>📊 Stats</h2>
-      <p>Total: ${stats.totalPnL}</p>
-      <p>Winrate: {stats.winrate}%</p>
-
-      <h2>🎯 Discipline</h2>
-      <p>{discipline}% VALID trades</p>
-
-      <h2>📈 Equity Curve</h2>
-      <div style={{ width: "100%", height: 300 }}>
+      <div style={{ marginTop: 20, height: 250 }}>
         <ResponsiveContainer>
           <LineChart data={chartData}>
             <XAxis dataKey="trade" />
             <YAxis />
             <Tooltip />
-            <Line type="monotone" dataKey="equity" stroke="#00ffff" />
+            <Line type="monotone" dataKey="equity" stroke="#00ffaa" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      <h2>Trades</h2>
-      {trades.map((t,i)=>(
-        <div key={i}>#{i+1} ${t.pnl} {t.valid?"VALID":"INVALID"}</div>
-      ))}
+      <button onClick={resetDay} style={{ marginTop: 20 }}>Reset Day</button>
     </div>
   );
 }
