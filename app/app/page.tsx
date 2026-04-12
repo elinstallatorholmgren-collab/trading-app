@@ -230,6 +230,27 @@ export default function Page() {
           </div>
         </div>
 
+<button
+  onClick={async () => {
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+    });
+    const data = await res.json();
+    window.location.href = data.url;
+  }}
+  style={{
+    marginTop: 20,
+    padding: 12,
+    background: "#00ffaa",
+    borderRadius: 8,
+    border: "none",
+    cursor: "pointer",
+    width: "100%"
+  }}
+>
+  Upgrade to Pro
+</button>
+
         {/* CHECKLIST */}
         <div style={styles.checklist}>
           {(
