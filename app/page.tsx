@@ -6,6 +6,7 @@ export default function TradingApp() {
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
   const [dailyGoal, setDailyGoal] = useState(200);
+  const [dailyLossLimit, setDailyLossLimit] = useState(-200);
 
   const [checklist, setChecklist] = useState({
     level: false,
@@ -16,14 +17,17 @@ export default function TradingApp() {
   const [waiting, setWaiting] = useState(false);
   const [locked, setLocked] = useState(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("trades");
-    if (saved) setTrades(JSON.parse(saved));
-  }, []);
+  // daily reset key
+  const todayKey = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
-    localStorage.setItem("trades", JSON.stringify(trades));
-  }, [trades]);
+    const saved = localStorage.getItem("trades_" + todayKey);
+    if (saved) setTrades(JSON.parse(saved));
+  }, [todayKey]);
+
+  useEffect(() => {
+    localStorage.setItem("trades_" + todayKey, JSON.stringify(trades));
+  }, [trades, todayKey]);
 
   const isValid = checklist.level && checklist.confirmation && checklist.rr;
 
@@ -44,19 +48,28 @@ export default function TradingApp() {
     return { totalPnL, equity, winrate, wins, losses };
   }, [trades]);
 
-  // Notifications
+  // Notifications permission
   useEffect(() => {
     if (Notification.permission !== "granted") {
       Notification.requestPermission();
     }
   }, []);
 
+  // goal lock
   useEffect(() => {
     if (stats.totalPnL >= dailyGoal) {
       new Notification("🎯 Goal reached! Stop trading.");
       setLocked(true);
     }
-  }, [stats.totalPnL]);
+  }, [stats.totalPnL, dailyGoal]);
+
+  // loss lock
+  useEffect(() => {
+    if (stats.totalPnL <= dailyLossLimit) {
+      new Notification("🛑 Daily loss limit hit. Stop trading.");
+      setLocked(true);
+    }
+  }, [stats.totalPnL, dailyLossLimit]);
 
   const handleAddTrade = () => {
     if (!pnl || locked) return;
@@ -81,6 +94,12 @@ export default function TradingApp() {
     }, 2000);
   };
 
+  const resetDay = () => {
+    setTrades([]);
+    setLocked(false);
+    localStorage.removeItem("trades_" + todayKey);
+  };
+
   const chartData = stats.equity.map((v, i) => ({
     trade: i + 1,
     equity: v,
@@ -98,7 +117,13 @@ export default function TradingApp() {
 
       <h2>🎯 Daily Goal</h2>
       <input value={dailyGoal} onChange={(e)=>setDailyGoal(Number(e.target.value))} />
+
+      <h2>🛑 Daily Loss Limit</h2>
+      <input value={dailyLossLimit} onChange={(e)=>setDailyLossLimit(Number(e.target.value))} />
+
       <p>Current: ${stats.totalPnL}</p>
+
+      <button onClick={resetDay}>🔄 Reset Day</button>
 
       <h2>Checklist</h2>
       <label><input type="checkbox" checked={checklist.level} onChange={(e)=>setChecklist({...checklist,level:e.target.checked})}/> Level</label><br/>
