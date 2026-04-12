@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 export default function Page() {
-  const today = new Date().toISOString().slice(0, 10);
+  // ✅ LOCAL DATE (FIXED)
+  const today = new Date().toLocaleDateString("sv-SE");
 
   const [trades, setTrades] = useState<{ pnl: number; valid: boolean }[]>([]);
   const [pnl, setPnl] = useState("");
@@ -54,6 +55,15 @@ export default function Page() {
     return { totalPnL: total, discipline };
   }, [trades]);
 
+  // ✅ SMART DISCIPLINED DAY LOGIC
+  const isDisciplinedDay =
+    trades.length > 0 &&
+    (
+      trades.length < 3
+        ? stats.discipline === 100
+        : stats.discipline >= 80
+    );
+
   // GRAPH DATA
   const graphData = useMemo(() => {
     let pnlRunning = 0;
@@ -82,17 +92,25 @@ export default function Page() {
 
     setPnl("");
 
-    const validCount = newTrades.filter(t => t.valid).length;
+    // CHECK DISCIPLINE AFTER TRADE
+    let validCount = 0;
+    newTrades.forEach(t => { if (t.valid) validCount++; });
+
     const discipline = Math.round((validCount / newTrades.length) * 100);
 
     const disciplined =
-      newTrades.length >= 3 && discipline >= 80;
+      newTrades.length > 0 &&
+      (
+        newTrades.length < 3
+          ? discipline === 100
+          : discipline >= 80
+      );
 
     if (disciplined) {
       if (lastDate !== today) {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const y = yesterday.toISOString().slice(0, 10);
+        const y = yesterday.toLocaleDateString("sv-SE");
 
         if (lastDate === y) {
           setStreak((s) => {
@@ -124,6 +142,7 @@ export default function Page() {
       maxWidth: 500,
       margin: "0 auto"
     }}>
+      {/* TITLE */}
       <h1 style={{
         textAlign: "center",
         fontSize: 36,
@@ -135,6 +154,7 @@ export default function Page() {
         Trading Discipline
       </h1>
 
+      {/* STATUS */}
       <h2 style={{
         textAlign: "center",
         color: isValid ? "#00ffaa" : "#ff4d4f"
@@ -149,9 +169,21 @@ export default function Page() {
         <label><input type="checkbox" checked={checklist.rr} onChange={e=>setChecklist({...checklist,rr:e.target.checked})}/> RR</label>
       </div>
 
+      {/* DISCIPLINE + STREAK */}
       <p style={{ textAlign: "center" }}>
         Discipline: {stats.discipline}% | 🔥 {streak} days
       </p>
+
+      {/* PERFECT DAY INDICATOR */}
+      {isDisciplinedDay && (
+        <p style={{
+          textAlign: "center",
+          color: "#00ffaa",
+          fontWeight: "bold"
+        }}>
+          🏆 Disciplined Day
+        </p>
+      )}
 
       {/* INPUT */}
       <div style={{ display: "flex", gap: 8 }}>
@@ -201,6 +233,7 @@ export default function Page() {
         </svg>
       </div>
 
+      {/* PNL */}
       <p style={{ textAlign: "center", marginTop: 10 }}>
         PnL: ${stats.totalPnL}
       </p>
