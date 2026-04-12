@@ -1,6 +1,6 @@
-const [isPro, setIsPro] = useState(false);
-
 "use client";
+
+const [isPro, setIsPro] = useState(false);
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
