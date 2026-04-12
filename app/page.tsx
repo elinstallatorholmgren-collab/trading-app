@@ -58,13 +58,22 @@ export default function TradingApp() {
   }));
 
   return (
-    <div style={{
-      padding: 20,
-      fontFamily: "Arial",
-      background: "#0b0f14",
-      color: "#e6edf3",
-      minHeight: "100vh"
-    }}>
+<div style={{
+  background: "linear-gradient(145deg, #111827, #0f172a)",
+  padding: 20,
+  borderRadius: 16,
+  boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+  border: "1px solid rgba(255,255,255,0.05)",
+  marginBottom: 20
+}}>
+  <p style={{ opacity: 0.6 }}>PnL</p>
+  <h1 style={{
+    fontSize: 36,
+    color: stats.totalPnL >= 0 ? "#00ffaa" : "#ff4d4f"
+  }}>
+    ${stats.totalPnL}
+  </h1>
+</div>
       <h1>📈 Trading OS</h1>
 
       <h2 style={{
