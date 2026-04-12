@@ -1,6 +1,6 @@
 "use client";
 
-const [isPro, setIsPro] = useState(false);
+export const dynamic = "force-dynamic";
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
@@ -8,6 +8,7 @@ import { supabase } from "../../lib/supabase";
 type ChecklistKey = "level" | "confirmation" | "rr";
 
 export default function Page() {
+  const [isPro, setIsPro] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
 
