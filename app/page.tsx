@@ -21,13 +21,10 @@ export default function Page() {
 
   // AUTH
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
-
-    supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user || null);
-    });
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.onAuthStateChange((_e, session) =>
+      setUser(session?.user || null)
+    );
   }, []);
 
   // LOAD
@@ -38,6 +35,7 @@ export default function Page() {
       .from("trades")
       .select("*")
       .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
       .then(({ data }) => {
         if (data) setTrades(data);
       });
@@ -62,6 +60,22 @@ export default function Page() {
     };
   }, [trades]);
 
+  // GRAPH
+  const graphData = useMemo(() => {
+    let pnlRunning = 0;
+    let validCount = 0;
+
+    return trades.map((t, i) => {
+      pnlRunning += t.pnl;
+      if (t.valid) validCount++;
+
+      return {
+        pnl: pnlRunning,
+        discipline: Math.round((validCount / (i + 1)) * 100),
+      };
+    });
+  }, [trades]);
+
   // ADD TRADE
   const handleAddTrade = async () => {
     if (!pnl || !user) return;
@@ -70,11 +84,7 @@ export default function Page() {
     if (isNaN(value)) return;
 
     await supabase.from("trades").insert([
-      {
-        pnl: value,
-        valid: isValid,
-        user_id: user.id,
-      },
+      { pnl: value, valid: isValid, user_id: user.id },
     ]);
 
     setTrades((prev) => [...prev, { pnl: value, valid: isValid }]);
@@ -87,16 +97,14 @@ export default function Page() {
       <div style={styles.center}>
         <div style={styles.card}>
           <h1 style={styles.title}>Trading Discipline</h1>
-
           <input
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={styles.input}
           />
-
           <button
-            style={styles.buttonPrimary}
+            style={styles.btnPrimary}
             onClick={async () => {
               await supabase.auth.signInWithOtp({ email });
               alert("Check mail ✉️");
@@ -115,12 +123,14 @@ export default function Page() {
         <h1 style={styles.title}>Trading Discipline</h1>
 
         {/* STATUS */}
-        <div style={{
-          ...styles.badge,
-          background: isValid ? "#00ffaa22" : "#ff4d4f22",
-          color: isValid ? "#00ffaa" : "#ff4d4f"
-        }}>
-          {isValid ? "VALID" : "INVALID"}
+        <div
+          style={{
+            ...styles.status,
+            background: isValid ? "#00ffaa22" : "#ff4d4f22",
+            color: isValid ? "#00ffaa" : "#ff4d4f",
+          }}
+        >
+          {isValid ? "VALID SETUP" : "INVALID SETUP"}
         </div>
 
         {/* CARDS */}
@@ -138,19 +148,29 @@ export default function Page() {
 
         {/* CHECKLIST */}
         <div style={styles.checklist}>
-          {["level", "confirmation", "rr"].map((key) => (
-            <label key={key}>
-              <input
-                type="checkbox"
-                onChange={(e) =>
-                  setChecklist({
-                    ...checklist,
-                    [key]: e.target.checked,
-                  })
-                }
-              />
-              {key}
-            </label>
+          {[
+            { key: "level", label: "Level" },
+            { key: "confirmation", label: "Confirmation" },
+            { key: "rr", label: "RR" },
+          ].map((item) => (
+            <div
+              key={item.key}
+              style={{
+                ...styles.checkItem,
+                border:
+                  checklist[item.key]
+                    ? "1px solid #00ffaa"
+                    : "1px solid #333",
+              }}
+              onClick={() =>
+                setChecklist({
+                  ...checklist,
+                  [item.key]: !checklist[item.key],
+                })
+              }
+            >
+              {item.label}
+            </div>
           ))}
         </div>
 
@@ -166,12 +186,40 @@ export default function Page() {
           <button
             onClick={handleAddTrade}
             style={{
-              ...styles.buttonPrimary,
+              ...styles.btnPrimary,
               background: isValid ? "#00ffaa" : "#ff4d4f",
             }}
           >
             {isValid ? "Log" : "Break"}
           </button>
+        </div>
+
+        {/* GRAPH */}
+        <div style={{ marginTop: 30 }}>
+          <svg width="100%" height="200">
+            {graphData.map((d, i) => {
+              if (i === 0) return null;
+              const prev = graphData[i - 1];
+
+              const x1 = ((i - 1) / graphData.length) * 100;
+              const x2 = (i / graphData.length) * 100;
+
+              const y1 = 100 - prev.pnl / 10;
+              const y2 = 100 - d.pnl / 10;
+
+              return (
+                <line
+                  key={i}
+                  x1={`${x1}%`}
+                  y1={`${y1}%`}
+                  x2={`${x2}%`}
+                  y2={`${y2}%`}
+                  stroke="#00ffaa"
+                  strokeWidth="2"
+                />
+              );
+            })}
+          </svg>
         </div>
 
         <button
@@ -185,7 +233,6 @@ export default function Page() {
   );
 }
 
-// 🎨 STYLES
 const styles: any = {
   page: {
     background: "#020617",
@@ -193,44 +240,55 @@ const styles: any = {
     padding: 20,
   },
   container: {
-    maxWidth: 900,
+    maxWidth: 500,
     margin: "0 auto",
     color: "#fff",
   },
   center: {
     display: "flex",
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
     height: "100vh",
     background: "#020617",
   },
   title: {
     textAlign: "center",
-    fontSize: 36,
-    marginBottom: 20,
+    fontSize: 32,
     color: "#00ffaa",
+    marginBottom: 20,
   },
-  card: {
-    background: "#111827",
-    padding: 30,
-    borderRadius: 12,
-    width: 300,
-  },
-  cardSmall: {
-    background: "#111827",
-    padding: 20,
-    borderRadius: 12,
-    flex: 1,
+  status: {
+    textAlign: "center",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 15,
   },
   grid: {
     display: "flex",
-    gap: 16,
-    marginBottom: 20,
+    gap: 12,
+    marginBottom: 15,
+  },
+  cardSmall: {
+    flex: 1,
+    background: "#111827",
+    padding: 15,
+    borderRadius: 10,
+  },
+  checklist: {
+    display: "flex",
+    gap: 10,
+    marginBottom: 15,
+  },
+  checkItem: {
+    flex: 1,
+    padding: 10,
+    textAlign: "center",
+    borderRadius: 8,
+    cursor: "pointer",
   },
   inputRow: {
     display: "flex",
     gap: 10,
-    marginTop: 10,
   },
   input: {
     flex: 1,
@@ -238,26 +296,14 @@ const styles: any = {
     borderRadius: 8,
     border: "none",
   },
-  buttonPrimary: {
+  btnPrimary: {
     padding: 10,
     borderRadius: 8,
     border: "none",
     cursor: "pointer",
   },
-  badge: {
-    textAlign: "center",
-    padding: 6,
-    borderRadius: 6,
-    marginBottom: 10,
-  },
-  checklist: {
-    display: "flex",
-    justifyContent: "space-around",
-    marginTop: 10,
-  },
   logout: {
     marginTop: 20,
-    background: "transparent",
-    color: "#aaa",
+    color: "#888",
   },
 };
