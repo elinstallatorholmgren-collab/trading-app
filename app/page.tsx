@@ -1,6 +1,13 @@
 "use client";
 import { useMemo, useState, useEffect } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import dynamic from "next/dynamic";
+
+const LineChart = dynamic(() => import("recharts").then(m => m.LineChart), { ssr: false });
+const Line = dynamic(() => import("recharts").then(m => m.Line), { ssr: false });
+const XAxis = dynamic(() => import("recharts").then(m => m.XAxis), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then(m => m.YAxis), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false });
 
 export default function TradingApp() {
   const [trades, setTrades] = useState<any[]>([]);
@@ -13,6 +20,9 @@ export default function TradingApp() {
   const [locked, setLocked] = useState(false);
   const [flash, setFlash] = useState<"" | "green" | "red">("");
   const [streak, setStreak] = useState(0);
+
+  const [goalHit, setGoalHit] = useState(false);
+  const [lossHit, setLossHit] = useState(false);
 
   const todayKey = new Date().toISOString().slice(0, 10);
 
@@ -44,17 +54,20 @@ export default function TradingApp() {
   }, [trades]);
 
   useEffect(() => {
-    if (stats.totalPnL >= dailyGoal) {
-      setLocked(true);
-      setFlash("green");
-      setTimeout(() => setFlash(""), 1500);
+    if (stats.totalPnL >= dailyGoal && !goalHit) {
       new Notification("🎯 Goal reached – you're done!");
-    }
-    if (stats.totalPnL <= dailyLossLimit) {
       setLocked(true);
-      setFlash("red");
-      setTimeout(() => setFlash(""), 1500);
+      setGoalHit(true);
+      setFlash("green");
+      setTimeout(() => setFlash(""), 1200);
+    }
+
+    if (stats.totalPnL <= dailyLossLimit && !lossHit) {
       new Notification("🛑 Loss limit hit – stop.");
+      setLocked(true);
+      setLossHit(true);
+      setFlash("red");
+      setTimeout(() => setFlash(""), 1200);
     }
   }, [stats.totalPnL, dailyGoal, dailyLossLimit]);
 
@@ -87,19 +100,21 @@ export default function TradingApp() {
         new Notification("⚠️ Invalid trade");
       }
 
-      setTimeout(() => setFlash(""), 800);
+      setTimeout(() => setFlash(""), 600);
 
       setTrades((prev) => [...prev, newTrade]);
       setPnl("");
       setChecklist({ level: false, confirmation: false, rr: false });
       setWaiting(false);
-    }, 1200);
+    }, 800);
   };
 
   const resetDay = () => {
     setTrades([]);
     setLocked(false);
     setStreak(0);
+    setGoalHit(false);
+    setLossHit(false);
     localStorage.removeItem("trades_" + todayKey);
   };
 
@@ -110,60 +125,31 @@ export default function TradingApp() {
     : 0;
 
   return (
-    <div
-      style={{
-        padding: 20,
-        fontFamily: "Arial",
-        background: "#0b0f14",
-        color: "#e6edf3",
-        minHeight: "100vh",
-        transition: "0.3s",
-      }}
-    >
+    <div style={{ padding: 20, fontFamily: "Arial", background: "#0b0f14", color: "#e6edf3", minHeight: "100vh" }}>
       <h1 style={{ fontSize: 28 }}>📈 Trading OS</h1>
 
       {flash && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: flash === "green" ? "rgba(0,255,150,0.08)" : "rgba(255,0,0,0.08)",
-            pointerEvents: "none",
-          }}
-        />
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: flash === "green" ? "rgba(0,255,150,0.08)" : "rgba(255,0,0,0.08)", pointerEvents: "none" }} />
       )}
 
-      <h2>💰 ${stats.totalPnL}</h2>
+      <h2 style={{ fontSize: 36, margin: "10px 0" }}>${stats.totalPnL}</h2>
 
-      <p>
-        🎯 Goal: {dailyGoal} | 🛑 Limit: {dailyLossLimit}
-      </p>
-
-      <p>🔥 Streak: {streak}</p>
-      <p>🎯 Discipline: {discipline}%</p>
+      <p>🎯 Goal: {dailyGoal} | 🛑 Limit: {dailyLossLimit}</p>
+      <p>🔥 Streak: {streak} | 🎯 Discipline: {discipline}%</p>
 
       {locked && <p style={{ color: "red" }}>🚫 Locked</p>}
 
-      <div style={{ marginTop: 10 }}>
-        <input value={pnl} onChange={(e) => setPnl(e.target.value)} placeholder="PnL" />
-        <button onClick={handleAddTrade} disabled={waiting || locked}>
+      <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
+        <input type="number" value={pnl} onChange={(e) => setPnl(e.target.value)} placeholder="PnL" style={{ padding: 8 }} />
+        <button onClick={handleAddTrade} disabled={waiting || locked} style={{ padding: 8, cursor: "pointer" }}>
           {waiting ? "..." : "Add"}
         </button>
       </div>
 
       <div style={{ marginTop: 10 }}>
-        <label>
-          <input type="checkbox" checked={checklist.level} onChange={(e)=>setChecklist({...checklist,level:e.target.checked})}/> Level
-        </label>
-        <label>
-          <input type="checkbox" checked={checklist.confirmation} onChange={(e)=>setChecklist({...checklist,confirmation:e.target.checked})}/> Confirm
-        </label>
-        <label>
-          <input type="checkbox" checked={checklist.rr} onChange={(e)=>setChecklist({...checklist,rr:e.target.checked})}/> RR
-        </label>
+        <label><input type="checkbox" checked={checklist.level} onChange={(e)=>setChecklist({...checklist,level:e.target.checked})}/> Level</label>
+        <label><input type="checkbox" checked={checklist.confirmation} onChange={(e)=>setChecklist({...checklist,confirmation:e.target.checked})}/> Confirm</label>
+        <label><input type="checkbox" checked={checklist.rr} onChange={(e)=>setChecklist({...checklist,rr:e.target.checked})}/> RR</label>
       </div>
 
       <div style={{ marginTop: 20, height: 250 }}>
@@ -172,12 +158,12 @@ export default function TradingApp() {
             <XAxis dataKey="trade" />
             <YAxis />
             <Tooltip />
-            <Line type="monotone" dataKey="equity" stroke="#00ffaa" strokeWidth={2} />
+            <Line type="monotone" dataKey="equity" stroke="#00ffaa" strokeWidth={2} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      <button onClick={resetDay} style={{ marginTop: 20 }}>Reset Day</button>
+      <button onClick={resetDay} style={{ marginTop: 20, padding: 8 }}>Reset Day</button>
     </div>
   );
 }
