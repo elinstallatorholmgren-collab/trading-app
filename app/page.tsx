@@ -12,6 +12,8 @@ export default function Page() {
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
 
+  const [feedback, setFeedback] = useState("");
+
   const [streak, setStreak] = useState(0);
   const [lastDate, setLastDate] = useState("");
 
@@ -24,7 +26,7 @@ export default function Page() {
   const isValid =
     checklist.level && checklist.confirmation && checklist.rr;
 
-  // 🔐 AUTH
+  // AUTH
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     supabase.auth.onAuthStateChange((_e, session) =>
@@ -32,7 +34,7 @@ export default function Page() {
     );
   }, []);
 
-  // 📥 LOAD
+  // LOAD
   useEffect(() => {
     if (!user) return;
 
@@ -52,7 +54,7 @@ export default function Page() {
     if (savedDate) setLastDate(savedDate);
   }, [user]);
 
-  // 📊 STATS
+  // STATS
   const stats = useMemo(() => {
     let total = 0;
     let valid = 0;
@@ -71,7 +73,7 @@ export default function Page() {
     };
   }, [trades]);
 
-  // 📈 GRAPH DATA
+  // GRAPH DATA
   const graphData = useMemo(() => {
     let pnlRunning = 0;
     let validCount = 0;
@@ -87,7 +89,7 @@ export default function Page() {
     });
   }, [trades]);
 
-  // ➕ ADD TRADE
+  // ADD TRADE
   const handleAddTrade = async () => {
     if (!pnl || !user) return;
 
@@ -104,9 +106,14 @@ export default function Page() {
     setTrades(newTrades);
     setPnl("");
 
-    // 🔥 STREAK
-    const today = new Date().toLocaleDateString("sv-SE");
+    // 🧠 FEEDBACK
+    if (isValid) {
+      setFeedback("✅ You followed your system");
+    } else {
+      setFeedback("❌ You broke your rules");
+    }
 
+    // 📊 DISCIPLINE
     let validCount = 0;
     newTrades.forEach((t) => {
       if (t.valid) validCount++;
@@ -116,10 +123,21 @@ export default function Page() {
       (validCount / newTrades.length) * 100
     );
 
+    if (discipline < 60) {
+      setFeedback("⚠️ You're trading emotionally");
+    }
+
+    // 🔥 STREAK
+    const today = new Date().toLocaleDateString("sv-SE");
+
     const disciplinedDay =
       newTrades.length < 3
         ? discipline === 100
         : discipline >= 80;
+
+    if (!isValid) {
+      setFeedback("⚠️ This trade breaks your streak");
+    }
 
     if (disciplinedDay) {
       if (lastDate !== today) {
@@ -145,7 +163,7 @@ export default function Page() {
     }
   };
 
-  // 🔐 LOGIN
+  // LOGIN
   if (!user) {
     return (
       <div style={styles.center}>
@@ -187,7 +205,14 @@ export default function Page() {
           {isValid ? "VALID SETUP" : "INVALID SETUP"}
         </div>
 
-        {/* 🔥 STREAK */}
+        {/* FEEDBACK */}
+        {feedback && (
+          <p style={{ textAlign: "center", marginTop: 10 }}>
+            {feedback}
+          </p>
+        )}
+
+        {/* STREAK */}
         <p style={{ textAlign: "center" }}>
           🔥 {streak} days
         </p>
