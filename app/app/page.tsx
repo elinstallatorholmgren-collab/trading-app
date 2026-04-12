@@ -1,3 +1,5 @@
+const [isPro, setIsPro] = useState(false);
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -45,6 +47,9 @@ export default function Page() {
       .order("created_at", { ascending: true })
       .then(({ data }) => {
         if (data) setTrades(data);
+	if (data && data.length > 0) {
+	  setIsPro(data[0].is_pro || false);
+	}
       });
 
     const savedStreak = localStorage.getItem("streak");
@@ -230,26 +235,6 @@ export default function Page() {
           </div>
         </div>
 
-<button
-  onClick={async () => {
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-    });
-    const data = await res.json();
-    window.location.href = data.url;
-  }}
-  style={{
-    marginTop: 20,
-    padding: 12,
-    background: "#00ffaa",
-    borderRadius: 8,
-    border: "none",
-    cursor: "pointer",
-    width: "100%"
-  }}
->
-  Upgrade to Pro
-</button>
 
         {/* CHECKLIST */}
         <div style={styles.checklist}>
@@ -333,6 +318,42 @@ export default function Page() {
           </svg>
         </div>
 
+{!isPro ? (
+  <button
+    onClick={async () => {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+      });
+      const data = await res.json();
+      window.location.href = data.url;
+    }}
+    style={{
+      marginTop: 30,
+      padding: 14,
+      background: "linear-gradient(90deg,#00ffaa,#00cc88)",
+      borderRadius: 10,
+      border: "none",
+      cursor: "pointer",
+      width: "100%",
+      fontWeight: "bold",
+      fontSize: 16
+    }}
+  >
+    Upgrade to Pro 🚀
+  </button>
+) : (
+  <div style={{
+    marginTop: 30,
+    padding: 14,
+    background: "#00ffaa22",
+    borderRadius: 10,
+    textAlign: "center",
+    color: "#00ffaa",
+    fontWeight: "bold"
+  }}>
+    ✅ You are Pro
+  </div>
+)}
         <button onClick={() => supabase.auth.signOut()} style={styles.logout}>
           Logout
         </button>

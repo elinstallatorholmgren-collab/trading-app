@@ -51,7 +51,7 @@ export default function Landing() {
         borderRadius: 12
       }}>
         <h2>Simple pricing</h2>
-        <h1 style={{ color: "#00ffaa" }}>79 kr / month</h1>
+        <h1 style={{ color: "#00ffaa" }}>$8/month</h1>
         <p style={{ color: "#aaa" }}>
           Unlimited history • Full tracking
         </p>
