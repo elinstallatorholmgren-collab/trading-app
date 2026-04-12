@@ -63,17 +63,20 @@ export default function Page() {
   }, [trades]);
 
   // GRAPH
-  const graphData = useMemo(() => {
-    let pnlRunning = 0;
+const graphData = useMemo(() => {
+  let pnlRunning = 0;
+  let validCount = 0;
 
-    return trades.map((t, i) => {
-      pnlRunning += t.pnl;
+  return trades.map((t, i) => {
+    pnlRunning += t.pnl;
+    if (t.valid) validCount++;
 
-      return {
-        pnl: pnlRunning,
-      };
-    });
-  }, [trades]);
+    return {
+      pnl: pnlRunning,
+      discipline: Math.round((validCount / (i + 1)) * 100),
+    };
+  });
+}, [trades]);
 
   // ADD TRADE
   const handleAddTrade = async () => {
