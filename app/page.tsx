@@ -10,7 +10,7 @@ const YAxis = dynamic(() => import("recharts").then(m => m.YAxis), { ssr: false 
 const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false });
 const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false });
 
-export default function TradingDisciplineApp() {
+export default function Page() {
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
 
@@ -27,15 +27,15 @@ export default function TradingDisciplineApp() {
     let running = 0;
     const equity: number[] = [];
 
-    const totalPnL = trades.reduce((a, t) => {
+    const totalPnL = trades.reduce((sum, t) => {
       running += t.pnl;
       equity.push(running);
-      return a + t.pnl;
+      return sum + t.pnl;
     }, 0);
 
-    const validTrades = trades.filter(t => t.valid).length;
+    const validCount = trades.filter(t => t.valid).length;
     const discipline = trades.length
-      ? Math.round((validTrades / trades.length) * 100)
+      ? Math.round((validCount / trades.length) * 100)
       : 0;
 
     return { totalPnL, equity, discipline };
@@ -44,13 +44,11 @@ export default function TradingDisciplineApp() {
   const handleAddTrade = () => {
     if (!pnl || !isValid) return;
 
-    const tradePnL = parseFloat(pnl.replace(",", "."));
+    const value = parseFloat(pnl.replace(",", "."));
 
-    setTrades((prev) => [
-      ...prev,
-      { pnl: tradePnL, valid: isValid },
-    ]);
+    if (isNaN(value)) return;
 
+    setTrades(prev => [...prev, { pnl: value, valid: isValid }]);
     setPnl("");
   };
 
@@ -60,91 +58,81 @@ export default function TradingDisciplineApp() {
   }));
 
   const card = {
-    background: "linear-gradient(145deg, #111827, #0f172a)",
-    padding: 20,
-    borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.05)"
+    background: "#111827",
+    padding: 16,
+    borderRadius: 12,
+    border: "1px solid #222",
+    marginBottom: 16,
   };
 
   return (
     <div style={{
-      padding: 20,
+      padding: 16,
       fontFamily: "Arial",
-      background: "radial-gradient(circle at top, #0f172a, #020617)",
+      background: "#020617",
       color: "#e6edf3",
-      minHeight: "100vh"
+      minHeight: "100vh",
+      maxWidth: 500,
+      margin: "0 auto"
     }}>
-      
+
       {/* TITLE */}
       <h1 style={{
         textAlign: "center",
-        fontSize: 34,
-        fontWeight: "bold",
-        marginBottom: 20,
-        background: "linear-gradient(90deg, #00ffaa, #00cc88)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent"
+        fontSize: 28,
+        marginBottom: 20
       }}>
         Trading Discipline
       </h1>
 
-      {/* HERO STATE */}
-      <div style={{
-        ...card,
-        textAlign: "center",
-        marginBottom: 20
-      }}>
-        <h1 style={{
-          fontSize: 28,
+      {/* STATUS */}
+      <div style={{ ...card, textAlign: "center" }}>
+        <h2 style={{
           color: isValid ? "#00ffaa" : "#ff4d4f"
         }}>
           {isValid ? "VALID SETUP" : "INVALID SETUP"}
-        </h1>
+        </h2>
       </div>
 
-      {/* CHECKLIST (UP TOP) */}
-      <div style={{
-        display: "flex",
-        gap: 20,
-        marginBottom: 10,
-        justifyContent: "center"
-      }}>
-        <label>
-          <input
-            type="checkbox"
-            checked={checklist.level}
-            onChange={(e) =>
-              setChecklist({ ...checklist, level: e.target.checked })
-            }
-          /> Level
-        </label>
+      {/* CHECKLIST */}
+      <div style={{ ...card }}>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={checklist.level}
+              onChange={(e) =>
+                setChecklist({ ...checklist, level: e.target.checked })
+              }
+            /> Level
+          </label>
 
-        <label>
-          <input
-            type="checkbox"
-            checked={checklist.confirmation}
-            onChange={(e) =>
-              setChecklist({ ...checklist, confirmation: e.target.checked })
-            }
-          /> Confirmation
-        </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={checklist.confirmation}
+              onChange={(e) =>
+                setChecklist({ ...checklist, confirmation: e.target.checked })
+              }
+            /> Confirmation
+          </label>
 
-        <label>
-          <input
-            type="checkbox"
-            checked={checklist.rr}
-            onChange={(e) =>
-              setChecklist({ ...checklist, rr: e.target.checked })
-            }
-          /> RR
-        </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={checklist.rr}
+              onChange={(e) =>
+                setChecklist({ ...checklist, rr: e.target.checked })
+              }
+            /> RR
+          </label>
+        </div>
       </div>
 
       {/* FEEDBACK */}
       <p style={{
         textAlign: "center",
-        marginBottom: 20,
-        fontWeight: "bold",
+        marginBottom: 16,
         color: isValid ? "#00ffaa" : "#ff4d4f"
       }}>
         {isValid
@@ -153,22 +141,13 @@ export default function TradingDisciplineApp() {
       </p>
 
       {/* DISCIPLINE */}
-      <div style={{
-        ...card,
-        textAlign: "center",
-        marginBottom: 20
-      }}>
-        <p style={{ opacity: 0.6 }}>Discipline</p>
-        <h2 style={{
-          fontSize: 32,
-          color: stats.discipline >= 80 ? "#00ffaa" : "#ff4d4f"
-        }}>
-          {stats.discipline}%
-        </h2>
+      <div style={{ ...card, textAlign: "center" }}>
+        <p>Discipline</p>
+        <h2>{stats.discipline}%</h2>
       </div>
 
       {/* INPUT */}
-      <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ display: "flex", gap: 8 }}>
         <input
           type="text"
           inputMode="decimal"
@@ -177,7 +156,7 @@ export default function TradingDisciplineApp() {
           placeholder="PnL"
           style={{
             flex: 1,
-            padding: 12,
+            padding: 10,
             borderRadius: 8,
             border: "1px solid #222",
             background: "#0f172a",
@@ -189,42 +168,39 @@ export default function TradingDisciplineApp() {
           onClick={handleAddTrade}
           disabled={!isValid}
           style={{
-            padding: "12px 20px",
-            background: isValid
-              ? "linear-gradient(135deg,#00ffaa,#00cc88)"
-              : "#1f2937",
-            color: "#000",
-            border: "none",
+            padding: "10px 14px",
+            background: isValid ? "#00ffaa" : "#333",
             borderRadius: 8,
+            border: "none",
             fontWeight: "bold",
-            cursor: isValid ? "pointer" : "not-allowed",
             opacity: isValid ? 1 : 0.4
           }}
         >
-          {isValid ? "Execute Trade" : "Invalid"}
+          Add
         </button>
       </div>
 
-      {/* PNL (DOWNPLAYED) */}
+      {/* PNL */}
       <p style={{
+        textAlign: "center",
         marginTop: 20,
-        opacity: 0.5,
-        textAlign: "center"
+        opacity: 0.6
       }}>
         PnL: ${stats.totalPnL}
       </p>
 
       {/* CHART */}
-      <div style={{ height: 250, marginTop: 10 }}>
+      <div style={{ height: 200, marginTop: 10 }}>
         <ResponsiveContainer>
           <LineChart data={chartData}>
             <XAxis dataKey="trade" />
             <YAxis />
             <Tooltip />
-            <Line dataKey="equity" stroke="#00ffaa" dot={false}/>
+            <Line dataKey="equity" stroke="#00ffaa" dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
+
     </div>
   );
 }
