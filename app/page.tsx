@@ -10,7 +10,7 @@ const YAxis = dynamic(() => import("recharts").then(m => m.YAxis), { ssr: false 
 const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false });
 const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false });
 
-export default function TradingApp() {
+export default function TradingDisciplineApp() {
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
 
@@ -42,9 +42,9 @@ export default function TradingApp() {
   }, [trades]);
 
   const handleAddTrade = () => {
-    if (!pnl) return;
+    if (!pnl || !isValid) return;
 
-    const tradePnL = parseFloat(pnl);
+    const tradePnL = parseFloat(pnl.replace(",", "."));
 
     setTrades((prev) => [
       ...prev,
@@ -102,56 +102,13 @@ export default function TradingApp() {
         </h1>
       </div>
 
-      {/* DISCIPLINE SCORE */}
+      {/* CHECKLIST (UP TOP) */}
       <div style={{
-        ...card,
-        marginBottom: 20,
-        textAlign: "center"
+        display: "flex",
+        gap: 20,
+        marginBottom: 10,
+        justifyContent: "center"
       }}>
-        <p style={{ opacity: 0.6 }}>Discipline</p>
-        <h2 style={{
-          fontSize: 32,
-          color: stats.discipline >= 80 ? "#00ffaa" : "#ff4d4f"
-        }}>
-          {stats.discipline}%
-        </h2>
-      </div>
-
-      {/* INPUT */}
-      <div style={{ display: "flex", gap: 10 }}>
-        <input
-          type="number"
-          value={pnl}
-          onChange={(e) => setPnl(e.target.value)}
-          placeholder="PnL"
-          style={{
-            flex: 1,
-            padding: 12,
-            borderRadius: 8,
-            border: "1px solid #222",
-            background: "#0f172a",
-            color: "#fff"
-          }}
-        />
-
-        <button
-          onClick={handleAddTrade}
-          style={{
-            padding: "12px 20px",
-            background: isValid ? "#00ffaa" : "#333",
-            color: "#000",
-            border: "none",
-            borderRadius: 8,
-            fontWeight: "bold",
-            cursor: "pointer"
-          }}
-        >
-          Add
-        </button>
-      </div>
-
-      {/* CHECKLIST */}
-      <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
         <label>
           <input
             type="checkbox"
@@ -169,7 +126,7 @@ export default function TradingApp() {
             onChange={(e) =>
               setChecklist({ ...checklist, confirmation: e.target.checked })
             }
-          /> Confirm
+          /> Confirmation
         </label>
 
         <label>
@@ -185,17 +142,74 @@ export default function TradingApp() {
 
       {/* FEEDBACK */}
       <p style={{
-        marginTop: 10,
+        textAlign: "center",
+        marginBottom: 20,
         fontWeight: "bold",
         color: isValid ? "#00ffaa" : "#ff4d4f"
       }}>
-        {isValid ? "You followed your rules" : "You are about to break rules"}
+        {isValid
+          ? "You are following your system"
+          : "You are about to break your rules"}
       </p>
 
-      {/* PNL (de-emphasized) */}
+      {/* DISCIPLINE */}
+      <div style={{
+        ...card,
+        textAlign: "center",
+        marginBottom: 20
+      }}>
+        <p style={{ opacity: 0.6 }}>Discipline</p>
+        <h2 style={{
+          fontSize: 32,
+          color: stats.discipline >= 80 ? "#00ffaa" : "#ff4d4f"
+        }}>
+          {stats.discipline}%
+        </h2>
+      </div>
+
+      {/* INPUT */}
+      <div style={{ display: "flex", gap: 10 }}>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={pnl}
+          onChange={(e) => setPnl(e.target.value)}
+          placeholder="PnL"
+          style={{
+            flex: 1,
+            padding: 12,
+            borderRadius: 8,
+            border: "1px solid #222",
+            background: "#0f172a",
+            color: "#fff"
+          }}
+        />
+
+        <button
+          onClick={handleAddTrade}
+          disabled={!isValid}
+          style={{
+            padding: "12px 20px",
+            background: isValid
+              ? "linear-gradient(135deg,#00ffaa,#00cc88)"
+              : "#1f2937",
+            color: "#000",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: "bold",
+            cursor: isValid ? "pointer" : "not-allowed",
+            opacity: isValid ? 1 : 0.4
+          }}
+        >
+          {isValid ? "Execute Trade" : "Invalid"}
+        </button>
+      </div>
+
+      {/* PNL (DOWNPLAYED) */}
       <p style={{
         marginTop: 20,
-        opacity: 0.5
+        opacity: 0.5,
+        textAlign: "center"
       }}>
         PnL: ${stats.totalPnL}
       </p>
@@ -207,7 +221,7 @@ export default function TradingApp() {
             <XAxis dataKey="trade" />
             <YAxis />
             <Tooltip />
-            <Line dataKey="equity" stroke="#00ffaa" />
+            <Line dataKey="equity" stroke="#00ffaa" dot={false}/>
           </LineChart>
         </ResponsiveContainer>
       </div>
