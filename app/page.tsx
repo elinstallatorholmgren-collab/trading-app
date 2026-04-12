@@ -194,33 +194,51 @@ export default function Page() {
           </button>
         </div>
 
-        {/* GRAPH */}
-        <div style={{ marginTop: 30 }}>
-          <svg width="100%" height="200">
-            {graphData.map((d, i) => {
-              if (i === 0) return null;
-              const prev = graphData[i - 1];
+      {/* GRAPH */}
+<div style={{ marginTop: 30 }}>
+  <svg width="100%" height="200">
+    {(() => {
+      const maxPnl = Math.max(...graphData.map(g => g.pnl), 1);
 
-              const x1 = ((i - 1) / graphData.length) * 100;
-              const x2 = (i / graphData.length) * 100;
+      return graphData.map((d, i) => {
+        if (i === 0) return null;
+        const prev = graphData[i - 1];
 
-              const y1 = 100 - prev.pnl / 10;
-              const y2 = 100 - d.pnl / 10;
+        const x1 = ((i - 1) / graphData.length) * 100;
+        const x2 = (i / graphData.length) * 100;
 
-              return (
-                <line
-                  key={i}
-                  x1={`${x1}%`}
-                  y1={`${y1}%`}
-                  x2={`${x2}%`}
-                  y2={`${y2}%`}
-                  stroke="#00ffaa"
-                  strokeWidth="2"
-                />
-              );
-            })}
-          </svg>
-        </div>
+        // 🟢 PNL (scaled)
+        const y1 = 100 - (prev.pnl / maxPnl) * 100;
+        const y2 = 100 - (d.pnl / maxPnl) * 100;
+
+        // 🔵 DISCIPLINE (relative to chart height)
+        const d1 = 100 - prev.discipline;
+        const d2 = 100 - d.discipline;
+
+        return (
+          <g key={i}>
+            <line
+              x1={`${x1}%`}
+              y1={`${y1}%`}
+              x2={`${x2}%`}
+              y2={`${y2}%`}
+              stroke="#00ffaa"
+              strokeWidth="2"
+            />
+            <line
+              x1={`${x1}%`}
+              y1={`${d1}%`}
+              x2={`${x2}%`}
+              y2={`${d2}%`}
+              stroke="#3b82f6"
+              strokeWidth="2"
+            />
+          </g>
+        );
+      });
+    })()}
+  </svg>
+</div>
 
         <button
           onClick={() => supabase.auth.signOut()}
