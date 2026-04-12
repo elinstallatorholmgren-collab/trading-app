@@ -20,7 +20,7 @@ export default function Page() {
   const isValid =
     checklist.level && checklist.confirmation && checklist.rr;
 
-  // LOAD SAVED DATA
+  // LOAD
   useEffect(() => {
     const savedTrades = localStorage.getItem("trades_" + today);
     const savedStreak = localStorage.getItem("streak");
@@ -31,7 +31,7 @@ export default function Page() {
     if (savedDate) setLastDate(savedDate);
   }, [today]);
 
-  // SAVE TRADES
+  // SAVE
   useEffect(() => {
     localStorage.setItem("trades_" + today, JSON.stringify(trades));
   }, [trades, today]);
@@ -54,11 +54,23 @@ export default function Page() {
     return { totalPnL: total, discipline };
   }, [trades]);
 
-  // CHECK IF DAY IS DISCIPLINED
-  const isDisciplinedDay =
-    trades.length >= 3 && stats.discipline >= 80;
+  // GRAPH DATA
+  const graphData = useMemo(() => {
+    let pnlRunning = 0;
+    let validCount = 0;
 
-  // HANDLE TRADE
+    return trades.map((t, i) => {
+      pnlRunning += t.pnl;
+      if (t.valid) validCount++;
+
+      return {
+        pnl: pnlRunning,
+        discipline: Math.round((validCount / (i + 1)) * 100),
+      };
+    });
+  }, [trades]);
+
+  // ADD TRADE
   const handleAddTrade = () => {
     if (!pnl) return;
 
@@ -70,7 +82,6 @@ export default function Page() {
 
     setPnl("");
 
-    // AFTER adding trade → check discipline
     const validCount = newTrades.filter(t => t.valid).length;
     const discipline = Math.round((validCount / newTrades.length) * 100);
 
@@ -78,7 +89,6 @@ export default function Page() {
       newTrades.length >= 3 && discipline >= 80;
 
     if (disciplined) {
-      // NEW DAY?
       if (lastDate !== today) {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
@@ -99,7 +109,6 @@ export default function Page() {
         localStorage.setItem("lastDate", today);
       }
     } else {
-      // broke discipline
       setStreak(0);
       localStorage.setItem("streak", "0");
     }
@@ -115,7 +124,6 @@ export default function Page() {
       maxWidth: 500,
       margin: "0 auto"
     }}>
-      {/* TITLE */}
       <h1 style={{
         textAlign: "center",
         fontSize: 36,
@@ -127,7 +135,6 @@ export default function Page() {
         Trading Discipline
       </h1>
 
-      {/* STATUS */}
       <h2 style={{
         textAlign: "center",
         color: isValid ? "#00ffaa" : "#ff4d4f"
@@ -142,22 +149,12 @@ export default function Page() {
         <label><input type="checkbox" checked={checklist.rr} onChange={e=>setChecklist({...checklist,rr:e.target.checked})}/> RR</label>
       </div>
 
-      {/* DISCIPLINE */}
       <p style={{ textAlign: "center" }}>
-        Discipline: {stats.discipline}%
+        Discipline: {stats.discipline}% | 🔥 {streak} days
       </p>
 
-      {/* STREAK */}
-      <div style={{
-        textAlign: "center",
-        marginTop: 10
-      }}>
-        <p style={{ opacity: 0.6 }}>🔥 Discipline Streak</p>
-        <h2>{streak} days</h2>
-      </div>
-
       {/* INPUT */}
-      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+      <div style={{ display: "flex", gap: 8 }}>
         <input
           type="text"
           inputMode="numeric"
@@ -177,8 +174,34 @@ export default function Page() {
         </button>
       </div>
 
-      {/* PNL */}
-      <p style={{ textAlign: "center", marginTop: 20 }}>
+      {/* GRAPH */}
+      <div style={{ marginTop: 30 }}>
+        <svg width="100%" height="200">
+          {graphData.map((d, i) => {
+            if (i === 0) return null;
+
+            const prev = graphData[i - 1];
+
+            const x1 = ((i - 1) / graphData.length) * 100;
+            const x2 = (i / graphData.length) * 100;
+
+            const y1 = 100 - prev.pnl / 10;
+            const y2 = 100 - d.pnl / 10;
+
+            const d1 = 100 - prev.discipline;
+            const d2 = 100 - d.discipline;
+
+            return (
+              <g key={i}>
+                <line x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`} stroke="#00ffaa" strokeWidth="2"/>
+                <line x1={`${x1}%`} y1={`${d1}%`} x2={`${x2}%`} y2={`${d2}%`} stroke="#3b82f6" strokeWidth="2"/>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <p style={{ textAlign: "center", marginTop: 10 }}>
         PnL: ${stats.totalPnL}
       </p>
     </div>
