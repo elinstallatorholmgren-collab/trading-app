@@ -14,9 +14,6 @@ export default function TradingApp() {
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
 
-  const [dailyGoal, setDailyGoal] = useState(200);
-  const [dailyLossLimit, setDailyLossLimit] = useState(-200);
-
   const [checklist, setChecklist] = useState({
     level: false,
     confirmation: false,
@@ -57,55 +54,111 @@ export default function TradingApp() {
     equity: v,
   }));
 
+  const card = {
+    background: "linear-gradient(145deg, #111827, #0f172a)",
+    padding: 20,
+    borderRadius: 16,
+    boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
+    border: "1px solid rgba(255,255,255,0.05)"
+  };
+
   return (
-<div style={{
-  background: "linear-gradient(145deg, #111827, #0f172a)",
-  padding: 20,
-  borderRadius: 16,
-  boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
-  border: "1px solid rgba(255,255,255,0.05)",
-  marginBottom: 20
-}}>
-  <p style={{ opacity: 0.6 }}>PnL</p>
-  <h1 style={{
-    fontSize: 36,
-    color: stats.totalPnL >= 0 ? "#00ffaa" : "#ff4d4f"
-  }}>
-    ${stats.totalPnL}
-  </h1>
-</div>
-      <h1>📈 Trading OS</h1>
+    <div style={{
+      padding: 20,
+      fontFamily: "Arial",
+      background: "radial-gradient(circle at top, #0f172a, #020617)",
+      color: "#e6edf3",
+      minHeight: "100vh"
+    }}>
+      <h1 style={{ marginBottom: 20 }}>📈 Trading OS</h1>
 
-      <h2 style={{
-        color: stats.totalPnL >= 0 ? "#00ffaa" : "#ff4d4f"
-      }}>
-        ${stats.totalPnL}
-      </h2>
+      {/* PNL CARD */}
+      <div style={{ ...card, marginBottom: 20 }}>
+        <p style={{ opacity: 0.6 }}>PnL</p>
+        <h1 style={{
+          fontSize: 36,
+          color: stats.totalPnL >= 0 ? "#00ffaa" : "#ff4d4f"
+        }}>
+          ${stats.totalPnL}
+        </h1>
+      </div>
 
-      <div style={{ marginTop: 10 }}>
+      {/* INPUT */}
+      <div style={{ display: "flex", gap: 10 }}>
         <input
           type="number"
           value={pnl}
           onChange={(e) => setPnl(e.target.value)}
           placeholder="PnL"
+          style={{
+            flex: 1,
+            padding: 12,
+            borderRadius: 8,
+            border: "1px solid #222",
+            background: "#0f172a",
+            color: "#fff"
+          }}
         />
-        <button onClick={handleAddTrade}>
-          Add Trade
+
+        <button
+          onClick={handleAddTrade}
+          style={{
+            padding: "12px 20px",
+            background: isValid ? "#00ffaa" : "#333",
+            color: "#000",
+            border: "none",
+            borderRadius: 8,
+            fontWeight: "bold",
+            cursor: "pointer"
+          }}
+        >
+          Add
         </button>
       </div>
 
-      <div style={{ marginTop: 10 }}>
-        <label><input type="checkbox" checked={checklist.level} onChange={(e)=>setChecklist({...checklist,level:e.target.checked})}/> Level</label>
-        <label><input type="checkbox" checked={checklist.confirmation} onChange={(e)=>setChecklist({...checklist,confirmation:e.target.checked})}/> Confirm</label>
-        <label><input type="checkbox" checked={checklist.rr} onChange={(e)=>setChecklist({...checklist,rr:e.target.checked})}/> RR</label>
+      {/* CHECKLIST */}
+      <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
+        <label>
+          <input
+            type="checkbox"
+            checked={checklist.level}
+            onChange={(e) =>
+              setChecklist({ ...checklist, level: e.target.checked })
+            }
+          /> Level
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={checklist.confirmation}
+            onChange={(e) =>
+              setChecklist({ ...checklist, confirmation: e.target.checked })
+            }
+          /> Confirm
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={checklist.rr}
+            onChange={(e) =>
+              setChecklist({ ...checklist, rr: e.target.checked })
+            }
+          /> RR
+        </label>
       </div>
 
+      {/* STATUS */}
       <p style={{
+        marginTop: 10,
+        fontWeight: "bold",
         color: isValid ? "#00ffaa" : "#ff4d4f"
       }}>
-        {isValid ? "VALID" : "INVALID"}
+        {isValid ? "✅ VALID TRADE" : "❌ INVALID TRADE"}
       </p>
 
+      {/* CHART */}
       <div style={{ height: 250, marginTop: 20 }}>
         <ResponsiveContainer>
           <LineChart data={chartData}>
