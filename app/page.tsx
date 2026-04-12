@@ -201,7 +201,12 @@ const graphData = useMemo(() => {
 <div style={{ marginTop: 30 }}>
   <svg width="100%" height="200">
     {(() => {
-      const maxPnl = Math.max(...graphData.map(g => g.pnl), 1);
+      const pnls = graphData.map(g => g.pnl);
+
+      const maxPnl = Math.max(...pnls, 1);
+      const minPnl = Math.min(...pnls, 0);
+
+      const range = maxPnl - minPnl || 1;
 
       return graphData.map((d, i) => {
         if (i === 0) return null;
@@ -210,13 +215,13 @@ const graphData = useMemo(() => {
         const x1 = ((i - 1) / graphData.length) * 100;
         const x2 = (i / graphData.length) * 100;
 
-        // 🟢 PNL (scaled)
-        const y1 = 100 - (prev.pnl / maxPnl) * 100;
-        const y2 = 100 - (d.pnl / maxPnl) * 100;
+        // 🟢 PNL (full range scaling)
+        const y1 = 100 - ((prev.pnl - minPnl) / range) * 100;
+        const y2 = 100 - ((d.pnl - minPnl) / range) * 100;
 
-        // 🔵 DISCIPLINE (relative to chart height)
-        const d1 = 100 - prev.discipline;
-        const d2 = 100 - d.discipline;
+        // 🔵 DISCIPLINE (same vertical system)
+        const d1 = 100 - (prev.discipline / 100) * 100;
+        const d2 = 100 - (d.discipline / 100) * 100;
 
         return (
           <g key={i}>
