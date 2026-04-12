@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 
+type ChecklistKey = "level" | "confirmation" | "rr";
+
 export default function Page() {
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
@@ -10,7 +12,7 @@ export default function Page() {
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
 
-  const [checklist, setChecklist] = useState({
+  const [checklist, setChecklist] = useState<Record<ChecklistKey, boolean>>({
     level: false,
     confirmation: false,
     rr: false,
@@ -63,15 +65,12 @@ export default function Page() {
   // GRAPH
   const graphData = useMemo(() => {
     let pnlRunning = 0;
-    let validCount = 0;
 
     return trades.map((t, i) => {
       pnlRunning += t.pnl;
-      if (t.valid) validCount++;
 
       return {
         pnl: pnlRunning,
-        discipline: Math.round((validCount / (i + 1)) * 100),
       };
     });
   }, [trades]);
@@ -148,19 +147,20 @@ export default function Page() {
 
         {/* CHECKLIST */}
         <div style={styles.checklist}>
-          {[
-            { key: "level", label: "Level" },
-            { key: "confirmation", label: "Confirmation" },
-            { key: "rr", label: "RR" },
-          ].map((item) => (
+          {(
+            [
+              { key: "level", label: "Level" },
+              { key: "confirmation", label: "Confirmation" },
+              { key: "rr", label: "RR" },
+            ] as { key: ChecklistKey; label: string }[]
+          ).map((item) => (
             <div
               key={item.key}
               style={{
                 ...styles.checkItem,
-                border:
-                  checklist[item.key]
-                    ? "1px solid #00ffaa"
-                    : "1px solid #333",
+                border: checklist[item.key]
+                  ? "1px solid #00ffaa"
+                  : "1px solid #333",
               }}
               onClick={() =>
                 setChecklist({
@@ -234,76 +234,17 @@ export default function Page() {
 }
 
 const styles: any = {
-  page: {
-    background: "#020617",
-    minHeight: "100vh",
-    padding: 20,
-  },
-  container: {
-    maxWidth: 500,
-    margin: "0 auto",
-    color: "#fff",
-  },
-  center: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    background: "#020617",
-  },
-  title: {
-    textAlign: "center",
-    fontSize: 32,
-    color: "#00ffaa",
-    marginBottom: 20,
-  },
-  status: {
-    textAlign: "center",
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 15,
-  },
-  grid: {
-    display: "flex",
-    gap: 12,
-    marginBottom: 15,
-  },
-  cardSmall: {
-    flex: 1,
-    background: "#111827",
-    padding: 15,
-    borderRadius: 10,
-  },
-  checklist: {
-    display: "flex",
-    gap: 10,
-    marginBottom: 15,
-  },
-  checkItem: {
-    flex: 1,
-    padding: 10,
-    textAlign: "center",
-    borderRadius: 8,
-    cursor: "pointer",
-  },
-  inputRow: {
-    display: "flex",
-    gap: 10,
-  },
-  input: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 8,
-    border: "none",
-  },
-  btnPrimary: {
-    padding: 10,
-    borderRadius: 8,
-    border: "none",
-    cursor: "pointer",
-  },
-  logout: {
-    marginTop: 20,
-    color: "#888",
-  },
+  page: { background: "#020617", minHeight: "100vh", padding: 20 },
+  container: { maxWidth: 500, margin: "0 auto", color: "#fff" },
+  center: { display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#020617" },
+  title: { textAlign: "center", fontSize: 32, color: "#00ffaa", marginBottom: 20 },
+  status: { textAlign: "center", padding: 10, borderRadius: 10, marginBottom: 15 },
+  grid: { display: "flex", gap: 12, marginBottom: 15 },
+  cardSmall: { flex: 1, background: "#111827", padding: 15, borderRadius: 10 },
+  checklist: { display: "flex", gap: 10, marginBottom: 15 },
+  checkItem: { flex: 1, padding: 10, textAlign: "center", borderRadius: 8, cursor: "pointer" },
+  inputRow: { display: "flex", gap: 10 },
+  input: { flex: 1, padding: 10, borderRadius: 8, border: "none" },
+  btnPrimary: { padding: 10, borderRadius: 8, border: "none", cursor: "pointer" },
+  logout: { marginTop: 20, color: "#888" },
 };
