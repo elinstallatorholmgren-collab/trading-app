@@ -12,6 +12,9 @@ export default function Page() {
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
 
+  const [streak, setStreak] = useState(0);
+  const [lastDate, setLastDate] = useState("");
+
   const [checklist, setChecklist] = useState<Record<ChecklistKey, boolean>>({
     level: false,
     confirmation: false,
@@ -21,7 +24,7 @@ export default function Page() {
   const isValid =
     checklist.level && checklist.confirmation && checklist.rr;
 
-  // AUTH
+  // 🔐 AUTH
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     supabase.auth.onAuthStateChange((_e, session) =>
@@ -29,7 +32,7 @@ export default function Page() {
     );
   }, []);
 
-  // LOAD
+  // 📥 LOAD
   useEffect(() => {
     if (!user) return;
 
@@ -41,9 +44,15 @@ export default function Page() {
       .then(({ data }) => {
         if (data) setTrades(data);
       });
+
+    const savedStreak = localStorage.getItem("streak");
+    const savedDate = localStorage.getItem("lastDate");
+
+    if (savedStreak) setStreak(Number(savedStreak));
+    if (savedDate) setLastDate(savedDate);
   }, [user]);
 
-  // STATS
+  // 📊 STATS
   const stats = useMemo(() => {
     let total = 0;
     let valid = 0;
@@ -62,38 +71,81 @@ export default function Page() {
     };
   }, [trades]);
 
-  // GRAPH
-const graphData = useMemo(() => {
-  let pnlRunning = 0;
-  let validCount = 0;
+  // 📈 GRAPH DATA
+  const graphData = useMemo(() => {
+    let pnlRunning = 0;
+    let validCount = 0;
 
-  return trades.map((t, i) => {
-    pnlRunning += t.pnl;
-    if (t.valid) validCount++;
+    return trades.map((t, i) => {
+      pnlRunning += t.pnl;
+      if (t.valid) validCount++;
 
-    return {
-      pnl: pnlRunning,
-      discipline: Math.round((validCount / (i + 1)) * 100),
-    };
-  });
-}, [trades]);
+      return {
+        pnl: pnlRunning,
+        discipline: Math.round((validCount / (i + 1)) * 100),
+      };
+    });
+  }, [trades]);
 
-  // ADD TRADE
+  // ➕ ADD TRADE
   const handleAddTrade = async () => {
     if (!pnl || !user) return;
 
     const value = Number(pnl.replace(",", "."));
     if (isNaN(value)) return;
 
+    const newTrade = { pnl: value, valid: isValid };
+
     await supabase.from("trades").insert([
-      { pnl: value, valid: isValid, user_id: user.id },
+      { ...newTrade, user_id: user.id },
     ]);
 
-    setTrades((prev) => [...prev, { pnl: value, valid: isValid }]);
+    const newTrades = [...trades, newTrade];
+    setTrades(newTrades);
     setPnl("");
+
+    // 🔥 STREAK
+    const today = new Date().toLocaleDateString("sv-SE");
+
+    let validCount = 0;
+    newTrades.forEach((t) => {
+      if (t.valid) validCount++;
+    });
+
+    const discipline = Math.round(
+      (validCount / newTrades.length) * 100
+    );
+
+    const disciplinedDay =
+      newTrades.length < 3
+        ? discipline === 100
+        : discipline >= 80;
+
+    if (disciplinedDay) {
+      if (lastDate !== today) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const y = yesterday.toLocaleDateString("sv-SE");
+
+        if (lastDate === y) {
+          const newStreak = streak + 1;
+          setStreak(newStreak);
+          localStorage.setItem("streak", String(newStreak));
+        } else {
+          setStreak(1);
+          localStorage.setItem("streak", "1");
+        }
+
+        setLastDate(today);
+        localStorage.setItem("lastDate", today);
+      }
+    } else {
+      setStreak(0);
+      localStorage.setItem("streak", "0");
+    }
   };
 
-  // LOGIN
+  // 🔐 LOGIN
   if (!user) {
     return (
       <div style={styles.center}>
@@ -134,6 +186,11 @@ const graphData = useMemo(() => {
         >
           {isValid ? "VALID SETUP" : "INVALID SETUP"}
         </div>
+
+        {/* 🔥 STREAK */}
+        <p style={{ textAlign: "center" }}>
+          🔥 {streak} days
+        </p>
 
         {/* CARDS */}
         <div style={styles.grid}>
@@ -197,61 +254,40 @@ const graphData = useMemo(() => {
           </button>
         </div>
 
-      {/* GRAPH */}
-<div style={{ marginTop: 30 }}>
-  <svg width="100%" height="200">
-    {(() => {
-      const pnls = graphData.map(g => g.pnl);
+        {/* GRAPH */}
+        <div style={{ marginTop: 30 }}>
+          <svg width="100%" height="200">
+            {(() => {
+              const pnls = graphData.map((g) => g.pnl);
+              const maxPnl = Math.max(...pnls, 1);
+              const minPnl = Math.min(...pnls, 0);
+              const range = maxPnl - minPnl || 1;
 
-      const maxPnl = Math.max(...pnls, 1);
-      const minPnl = Math.min(...pnls, 0);
+              return graphData.map((d, i) => {
+                if (i === 0) return null;
+                const prev = graphData[i - 1];
 
-      const range = maxPnl - minPnl || 1;
+                const x1 = ((i - 1) / graphData.length) * 100;
+                const x2 = (i / graphData.length) * 100;
 
-      return graphData.map((d, i) => {
-        if (i === 0) return null;
-        const prev = graphData[i - 1];
+                const y1 = 100 - ((prev.pnl - minPnl) / range) * 100;
+                const y2 = 100 - ((d.pnl - minPnl) / range) * 100;
 
-        const x1 = ((i - 1) / graphData.length) * 100;
-        const x2 = (i / graphData.length) * 100;
+                const d1 = 100 - prev.discipline;
+                const d2 = 100 - d.discipline;
 
-        // 🟢 PNL (full range scaling)
-        const y1 = 100 - ((prev.pnl - minPnl) / range) * 100;
-        const y2 = 100 - ((d.pnl - minPnl) / range) * 100;
+                return (
+                  <g key={i}>
+                    <line x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`} stroke="#00ffaa" strokeWidth="2"/>
+                    <line x1={`${x1}%`} y1={`${d1}%`} x2={`${x2}%`} y2={`${d2}%`} stroke="#3b82f6" strokeWidth="2"/>
+                  </g>
+                );
+              });
+            })()}
+          </svg>
+        </div>
 
-        // 🔵 DISCIPLINE (same vertical system)
-        const d1 = 100 - (prev.discipline / 100) * 100;
-        const d2 = 100 - (d.discipline / 100) * 100;
-
-        return (
-          <g key={i}>
-            <line
-              x1={`${x1}%`}
-              y1={`${y1}%`}
-              x2={`${x2}%`}
-              y2={`${y2}%`}
-              stroke="#00ffaa"
-              strokeWidth="2"
-            />
-            <line
-              x1={`${x1}%`}
-              y1={`${d1}%`}
-              x2={`${x2}%`}
-              y2={`${d2}%`}
-              stroke="#3b82f6"
-              strokeWidth="2"
-            />
-          </g>
-        );
-      });
-    })()}
-  </svg>
-</div>
-
-        <button
-          onClick={() => supabase.auth.signOut()}
-          style={styles.logout}
-        >
+        <button onClick={() => supabase.auth.signOut()} style={styles.logout}>
           Logout
         </button>
       </div>
@@ -264,7 +300,7 @@ const styles: any = {
   container: { maxWidth: 500, margin: "0 auto", color: "#fff" },
   center: { display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#020617" },
   title: { textAlign: "center", fontSize: 32, color: "#00ffaa", marginBottom: 20 },
-  status: { textAlign: "center", padding: 10, borderRadius: 10, marginBottom: 15 },
+  status: { textAlign: "center", padding: 10, borderRadius: 10, marginBottom: 10 },
   grid: { display: "flex", gap: 12, marginBottom: 15 },
   cardSmall: { flex: 1, background: "#111827", padding: 15, borderRadius: 10 },
   checklist: { display: "flex", gap: 10, marginBottom: 15 },
