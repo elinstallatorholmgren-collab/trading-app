@@ -37,7 +37,7 @@ export default function Page() {
   }, [trades]);
 
   const handleAddTrade = () => {
-    if (!pnl || !isValid) return;
+    if (!pnl) return;
 
     const value = Number(pnl.replace(",", "."));
     if (isNaN(value)) return;
@@ -149,7 +149,7 @@ export default function Page() {
       >
         {isValid
           ? "You are following your system"
-          : "You are about to break your rules"}
+          : "You are breaking your rules"}
       </p>
 
       {/* DISCIPLINE */}
@@ -188,17 +188,18 @@ export default function Page() {
 
         <button
           onClick={handleAddTrade}
-          disabled={!isValid}
+          disabled={!pnl}
           style={{
             padding: "12px 16px",
-            background: isValid ? "#00ffaa" : "#333",
+            background: isValid ? "#00ffaa" : "#ff4d4f",
             borderRadius: 8,
             border: "none",
             fontWeight: "bold",
-            opacity: isValid ? 1 : 0.4,
+            color: "#000",
+            opacity: pnl ? 1 : 0.4,
           }}
         >
-          Add
+          {isValid ? "Log Trade" : "Break Rules"}
         </button>
       </div>
 
