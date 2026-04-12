@@ -218,13 +218,22 @@ export default function Page() {
       <h1 style={{
         textAlign: "center",
         fontSize: 36,
-        marginBottom: 20,
+        marginBottom: 10,
         background: "linear-gradient(90deg,#00ffaa,#00cc88)",
         WebkitBackgroundClip: "text",
         WebkitTextFillColor: "transparent"
       }}>
         Trading Discipline
       </h1>
+
+      {/* 🔥 VALID / INVALID */}
+      <h2 style={{
+        textAlign: "center",
+        color: isValid ? "#00ffaa" : "#ff4d4f",
+        marginBottom: 10
+      }}>
+        {isValid ? "✅ VALID TRADE" : "❌ INVALID TRADE"}
+      </h2>
 
       <p style={{ textAlign: "center", opacity: 0.6 }}>
         {user.email}
