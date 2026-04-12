@@ -4,16 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function Page() {
-  const today = new Date().toLocaleDateString("sv-SE");
-
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
 
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
-
-  const [streak, setStreak] = useState(0);
-  const [lastDate, setLastDate] = useState("");
 
   const [checklist, setChecklist] = useState({
     level: false,
@@ -24,41 +19,31 @@ export default function Page() {
   const isValid =
     checklist.level && checklist.confirmation && checklist.rr;
 
-  // 🔐 AUTH
+  // AUTH
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user || null);
     });
   }, []);
 
-  // 📥 LOAD TRADES
+  // LOAD
   useEffect(() => {
     if (!user) return;
 
-    const loadTrades = async () => {
-      const { data } = await supabase
-        .from("trades")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true });
-
-      if (data) setTrades(data);
-    };
-
-    loadTrades();
-
-    const savedStreak = localStorage.getItem("streak");
-    const savedDate = localStorage.getItem("lastDate");
-
-    if (savedStreak) setStreak(Number(savedStreak));
-    if (savedDate) setLastDate(savedDate);
+    supabase
+      .from("trades")
+      .select("*")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data) setTrades(data);
+      });
   }, [user]);
 
-  // 📊 STATS
+  // STATS
   const stats = useMemo(() => {
     let total = 0;
     let valid = 0;
@@ -77,37 +62,14 @@ export default function Page() {
     };
   }, [trades]);
 
-  // 🧠 DISCIPLINE LOGIC
-  const isDisciplinedDay =
-    trades.length > 0 &&
-    (trades.length < 3
-      ? stats.discipline === 100
-      : stats.discipline >= 80);
-
-  // 📈 GRAPH
-  const graphData = useMemo(() => {
-    let pnlRunning = 0;
-    let validCount = 0;
-
-    return trades.map((t, i) => {
-      pnlRunning += t.pnl;
-      if (t.valid) validCount++;
-
-      return {
-        pnl: pnlRunning,
-        discipline: Math.round((validCount / (i + 1)) * 100),
-      };
-    });
-  }, [trades]);
-
-  // ➕ ADD TRADE
+  // ADD TRADE
   const handleAddTrade = async () => {
     if (!pnl || !user) return;
 
     const value = Number(pnl.replace(",", "."));
     if (isNaN(value)) return;
 
-    const { error } = await supabase.from("trades").insert([
+    await supabase.from("trades").insert([
       {
         pnl: value,
         valid: isValid,
@@ -115,87 +77,29 @@ export default function Page() {
       },
     ]);
 
-    if (!error) {
-      const newTrades = [...trades, { pnl: value, valid: isValid }];
-      setTrades(newTrades);
-      setPnl("");
-
-      // STREAK
-      let validCount = 0;
-      newTrades.forEach((t) => {
-        if (t.valid) validCount++;
-      });
-
-      const discipline = Math.round(
-        (validCount / newTrades.length) * 100
-      );
-
-      const disciplined =
-        newTrades.length > 0 &&
-        (newTrades.length < 3
-          ? discipline === 100
-          : discipline >= 80);
-
-      if (disciplined) {
-        if (lastDate !== today) {
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const y = yesterday.toLocaleDateString("sv-SE");
-
-          if (lastDate === y) {
-            const newStreak = streak + 1;
-            setStreak(newStreak);
-            localStorage.setItem("streak", String(newStreak));
-          } else {
-            setStreak(1);
-            localStorage.setItem("streak", "1");
-          }
-
-          setLastDate(today);
-          localStorage.setItem("lastDate", today);
-        }
-      } else {
-        setStreak(0);
-        localStorage.setItem("streak", "0");
-      }
-    }
+    setTrades((prev) => [...prev, { pnl: value, valid: isValid }]);
+    setPnl("");
   };
 
-  // 🔐 LOGIN SCREEN
+  // LOGIN
   if (!user) {
     return (
-      <div style={{
-        padding: 20,
-        background: "#020617",
-        color: "#fff",
-        minHeight: "100vh"
-      }}>
-        <h1 style={{ textAlign: "center", fontSize: 36 }}>
-          Trading Discipline
-        </h1>
+      <div style={styles.center}>
+        <div style={styles.card}>
+          <h1 style={styles.title}>Trading Discipline</h1>
 
-        <div style={{
-          maxWidth: 300,
-          margin: "40px auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10
-        }}>
           <input
-            placeholder="Your email"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            style={{ padding: 10 }}
+            style={styles.input}
           />
 
           <button
+            style={styles.buttonPrimary}
             onClick={async () => {
               await supabase.auth.signInWithOtp({ email });
-              alert("Check your email ✉️");
-            }}
-            style={{
-              padding: 10,
-              background: "#00ffaa"
+              alert("Check mail ✉️");
             }}
           >
             Send Magic Link
@@ -205,118 +109,155 @@ export default function Page() {
     );
   }
 
-  // ✅ MAIN APP
   return (
-    <div style={{
-      padding: 16,
-      background: "#020617",
-      color: "#e6edf3",
-      minHeight: "100vh",
-      maxWidth: 500,
-      margin: "0 auto"
-    }}>
-      <h1 style={{
-        textAlign: "center",
-        fontSize: 36,
-        marginBottom: 10,
-        background: "linear-gradient(90deg,#00ffaa,#00cc88)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent"
-      }}>
-        Trading Discipline
-      </h1>
+    <div style={styles.page}>
+      <div style={styles.container}>
+        <h1 style={styles.title}>Trading Discipline</h1>
 
-      {/* 🔥 VALID / INVALID */}
-      <h2 style={{
-        textAlign: "center",
-        color: isValid ? "#00ffaa" : "#ff4d4f",
-        marginBottom: 10
-      }}>
-        {isValid ? "✅ VALID TRADE" : "❌ INVALID TRADE"}
-      </h2>
-
-      <p style={{ textAlign: "center", opacity: 0.6 }}>
-        {user.email}
-      </p>
-
-      <p style={{ textAlign: "center" }}>
-        Discipline: {stats.discipline}% | 🔥 {streak} days
-      </p>
-
-      {isDisciplinedDay && (
-        <p style={{
-          textAlign: "center",
-          color: "#00ffaa",
-          fontWeight: "bold"
+        {/* STATUS */}
+        <div style={{
+          ...styles.badge,
+          background: isValid ? "#00ffaa22" : "#ff4d4f22",
+          color: isValid ? "#00ffaa" : "#ff4d4f"
         }}>
-          🏆 Disciplined Day
-        </p>
-      )}
+          {isValid ? "VALID" : "INVALID"}
+        </div>
 
-      {/* CHECKLIST */}
-      <div style={{ display: "flex", justifyContent: "space-between", margin: 16 }}>
-        <label><input type="checkbox" onChange={e=>setChecklist({...checklist,level:e.target.checked})}/> Level</label>
-        <label><input type="checkbox" onChange={e=>setChecklist({...checklist,confirmation:e.target.checked})}/> Confirmation</label>
-        <label><input type="checkbox" onChange={e=>setChecklist({...checklist,rr:e.target.checked})}/> RR</label>
-      </div>
+        {/* CARDS */}
+        <div style={styles.grid}>
+          <div style={styles.cardSmall}>
+            <p>PnL</p>
+            <h2>${stats.pnl}</h2>
+          </div>
 
-      {/* INPUT */}
-      <div style={{ display: "flex", gap: 8 }}>
-        <input
-          value={pnl}
-          onChange={(e) => setPnl(e.target.value)}
-          placeholder="+100 / -50"
-          style={{ flex: 1, padding: 10 }}
-        />
+          <div style={styles.cardSmall}>
+            <p>Discipline</p>
+            <h2>{stats.discipline}%</h2>
+          </div>
+        </div>
+
+        {/* CHECKLIST */}
+        <div style={styles.checklist}>
+          {["level", "confirmation", "rr"].map((key) => (
+            <label key={key}>
+              <input
+                type="checkbox"
+                onChange={(e) =>
+                  setChecklist({
+                    ...checklist,
+                    [key]: e.target.checked,
+                  })
+                }
+              />
+              {key}
+            </label>
+          ))}
+        </div>
+
+        {/* INPUT */}
+        <div style={styles.inputRow}>
+          <input
+            value={pnl}
+            onChange={(e) => setPnl(e.target.value)}
+            placeholder="+100 / -50"
+            style={styles.input}
+          />
+
+          <button
+            onClick={handleAddTrade}
+            style={{
+              ...styles.buttonPrimary,
+              background: isValid ? "#00ffaa" : "#ff4d4f",
+            }}
+          >
+            {isValid ? "Log" : "Break"}
+          </button>
+        </div>
 
         <button
-          onClick={handleAddTrade}
-          style={{
-            background: isValid ? "#00ffaa" : "#ff4d4f",
-            padding: 10
-          }}
+          onClick={() => supabase.auth.signOut()}
+          style={styles.logout}
         >
-          {isValid ? "Log" : "Break"}
+          Logout
         </button>
       </div>
-
-      {/* GRAPH */}
-      <div style={{ marginTop: 30 }}>
-        <svg width="100%" height="200">
-          {graphData.map((d, i) => {
-            if (i === 0) return null;
-
-            const prev = graphData[i - 1];
-
-            const x1 = ((i - 1) / graphData.length) * 100;
-            const x2 = (i / graphData.length) * 100;
-
-            const y1 = 100 - prev.pnl / 10;
-            const y2 = 100 - d.pnl / 10;
-
-            const d1 = 100 - prev.discipline;
-            const d2 = 100 - d.discipline;
-
-            return (
-              <g key={i}>
-                <line x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`} stroke="#00ffaa" strokeWidth="2"/>
-                <line x1={`${x1}%`} y1={`${d1}%`} x2={`${x2}%`} y2={`${d2}%`} stroke="#3b82f6" strokeWidth="2"/>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      <p style={{ textAlign: "center", marginTop: 10 }}>
-        PnL: ${stats.pnl}
-      </p>
-
-      <button
-        onClick={() => supabase.auth.signOut()}
-        style={{ marginTop: 20 }}
-      >
-        Logout
-      </button>
     </div>
   );
 }
+
+// 🎨 STYLES
+const styles: any = {
+  page: {
+    background: "#020617",
+    minHeight: "100vh",
+    padding: 20,
+  },
+  container: {
+    maxWidth: 900,
+    margin: "0 auto",
+    color: "#fff",
+  },
+  center: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100vh",
+    background: "#020617",
+  },
+  title: {
+    textAlign: "center",
+    fontSize: 36,
+    marginBottom: 20,
+    color: "#00ffaa",
+  },
+  card: {
+    background: "#111827",
+    padding: 30,
+    borderRadius: 12,
+    width: 300,
+  },
+  cardSmall: {
+    background: "#111827",
+    padding: 20,
+    borderRadius: 12,
+    flex: 1,
+  },
+  grid: {
+    display: "flex",
+    gap: 16,
+    marginBottom: 20,
+  },
+  inputRow: {
+    display: "flex",
+    gap: 10,
+    marginTop: 10,
+  },
+  input: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 8,
+    border: "none",
+  },
+  buttonPrimary: {
+    padding: 10,
+    borderRadius: 8,
+    border: "none",
+    cursor: "pointer",
+  },
+  badge: {
+    textAlign: "center",
+    padding: 6,
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  checklist: {
+    display: "flex",
+    justifyContent: "space-around",
+    marginTop: 10,
+  },
+  logout: {
+    marginTop: 20,
+    background: "transparent",
+    color: "#aaa",
+  },
+};
