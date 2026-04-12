@@ -33,7 +33,12 @@ export default function TradingApp() {
       return a + t.pnl;
     }, 0);
 
-    return { totalPnL, equity };
+    const validTrades = trades.filter(t => t.valid).length;
+    const discipline = trades.length
+      ? Math.round((validTrades / trades.length) * 100)
+      : 0;
+
+    return { totalPnL, equity, discipline };
   }, [trades]);
 
   const handleAddTrade = () => {
@@ -58,7 +63,6 @@ export default function TradingApp() {
     background: "linear-gradient(145deg, #111827, #0f172a)",
     padding: 20,
     borderRadius: 16,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
     border: "1px solid rgba(255,255,255,0.05)"
   };
 
@@ -70,17 +74,47 @@ export default function TradingApp() {
       color: "#e6edf3",
       minHeight: "100vh"
     }}>
-      <h1 style={{ marginBottom: 20 }}>📈 Trading OS</h1>
+      
+      {/* TITLE */}
+      <h1 style={{
+        textAlign: "center",
+        fontSize: 34,
+        fontWeight: "bold",
+        marginBottom: 20,
+        background: "linear-gradient(90deg, #00ffaa, #00cc88)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent"
+      }}>
+        Trading Discipline
+      </h1>
 
-      {/* PNL CARD */}
-      <div style={{ ...card, marginBottom: 20 }}>
-        <p style={{ opacity: 0.6 }}>PnL</p>
+      {/* HERO STATE */}
+      <div style={{
+        ...card,
+        textAlign: "center",
+        marginBottom: 20
+      }}>
         <h1 style={{
-          fontSize: 36,
-          color: stats.totalPnL >= 0 ? "#00ffaa" : "#ff4d4f"
+          fontSize: 28,
+          color: isValid ? "#00ffaa" : "#ff4d4f"
         }}>
-          ${stats.totalPnL}
+          {isValid ? "VALID SETUP" : "INVALID SETUP"}
         </h1>
+      </div>
+
+      {/* DISCIPLINE SCORE */}
+      <div style={{
+        ...card,
+        marginBottom: 20,
+        textAlign: "center"
+      }}>
+        <p style={{ opacity: 0.6 }}>Discipline</p>
+        <h2 style={{
+          fontSize: 32,
+          color: stats.discipline >= 80 ? "#00ffaa" : "#ff4d4f"
+        }}>
+          {stats.discipline}%
+        </h2>
       </div>
 
       {/* INPUT */}
@@ -149,17 +183,25 @@ export default function TradingApp() {
         </label>
       </div>
 
-      {/* STATUS */}
+      {/* FEEDBACK */}
       <p style={{
         marginTop: 10,
         fontWeight: "bold",
         color: isValid ? "#00ffaa" : "#ff4d4f"
       }}>
-        {isValid ? "✅ VALID TRADE" : "❌ INVALID TRADE"}
+        {isValid ? "You followed your rules" : "You are about to break rules"}
+      </p>
+
+      {/* PNL (de-emphasized) */}
+      <p style={{
+        marginTop: 20,
+        opacity: 0.5
+      }}>
+        PnL: ${stats.totalPnL}
       </p>
 
       {/* CHART */}
-      <div style={{ height: 250, marginTop: 20 }}>
+      <div style={{ height: 250, marginTop: 10 }}>
         <ResponsiveContainer>
           <LineChart data={chartData}>
             <XAxis dataKey="trade" />
