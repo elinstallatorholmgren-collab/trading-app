@@ -18,7 +18,6 @@ export default function Page() {
   const stats = useMemo(() => {
     let running = 0;
     const equity: number[] = [];
-
     let total = 0;
 
     trades.forEach((t) => {
@@ -40,7 +39,7 @@ export default function Page() {
   const handleAddTrade = () => {
     if (!pnl || !isValid) return;
 
-    const value = parseFloat(pnl.replace(",", "."));
+    const value = Number(pnl.replace(",", "."));
     if (isNaN(value)) return;
 
     setTrades((prev) => [...prev, { pnl: value, valid: isValid }]);
@@ -60,7 +59,18 @@ export default function Page() {
       }}
     >
       {/* TITLE */}
-      <h1 style={{ textAlign: "center", marginBottom: 20 }}>
+      <h1
+        style={{
+          textAlign: "center",
+          fontSize: 36,
+          fontWeight: "bold",
+          marginBottom: 24,
+          letterSpacing: 1,
+          background: "linear-gradient(90deg, #00ffaa, #00cc88)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+        }}
+      >
         Trading Discipline
       </h1>
 
@@ -69,7 +79,7 @@ export default function Page() {
         style={{
           background: "#111827",
           padding: 16,
-          borderRadius: 10,
+          borderRadius: 12,
           marginBottom: 16,
           textAlign: "center",
         }}
@@ -84,10 +94,11 @@ export default function Page() {
         style={{
           background: "#111827",
           padding: 16,
-          borderRadius: 10,
+          borderRadius: 12,
           marginBottom: 16,
           display: "flex",
           justifyContent: "space-between",
+          gap: 10,
         }}
       >
         <label>
@@ -132,6 +143,7 @@ export default function Page() {
         style={{
           textAlign: "center",
           marginBottom: 16,
+          fontWeight: "bold",
           color: isValid ? "#00ffaa" : "#ff4d4f",
         }}
       >
@@ -145,30 +157,32 @@ export default function Page() {
         style={{
           background: "#111827",
           padding: 16,
-          borderRadius: 10,
+          borderRadius: 12,
           marginBottom: 16,
           textAlign: "center",
         }}
       >
-        <p>Discipline</p>
-        <h2>{stats.discipline}%</h2>
+        <p style={{ opacity: 0.6 }}>Discipline</p>
+        <h2 style={{ fontSize: 28 }}>{stats.discipline}%</h2>
       </div>
 
       {/* INPUT */}
       <div style={{ display: "flex", gap: 8 }}>
         <input
           type="text"
-          inputMode="decimal"
+          inputMode="numeric"
+          pattern="[-0-9]*"
           value={pnl}
           onChange={(e) => setPnl(e.target.value)}
-          placeholder="PnL"
+          placeholder="+100 / -50"
           style={{
             flex: 1,
-            padding: 10,
+            padding: 12,
             borderRadius: 8,
             border: "1px solid #222",
             background: "#0f172a",
             color: "#fff",
+            fontSize: 16,
           }}
         />
 
@@ -176,7 +190,7 @@ export default function Page() {
           onClick={handleAddTrade}
           disabled={!isValid}
           style={{
-            padding: "10px 14px",
+            padding: "12px 16px",
             background: isValid ? "#00ffaa" : "#333",
             borderRadius: 8,
             border: "none",
