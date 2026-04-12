@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from "../lib/supabase";
 
 export default function Page() {
-  // ✅ LOCAL DATE (FIXED)
   const today = new Date().toLocaleDateString("sv-SE");
 
   const [trades, setTrades] = useState<{ pnl: number; valid: boolean }[]>([]);
   const [pnl, setPnl] = useState("");
-
   const [streak, setStreak] = useState(0);
   const [lastDate, setLastDate] = useState("");
 
@@ -21,21 +20,32 @@ export default function Page() {
   const isValid =
     checklist.level && checklist.confirmation && checklist.rr;
 
-  // LOAD
+  // LOAD FROM SUPABASE
   useEffect(() => {
-    const savedTrades = localStorage.getItem("trades_" + today);
+    const loadTrades = async () => {
+      const { data } = await supabase
+        .from("trades")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (data) {
+        setTrades(
+          data.map((t) => ({
+            pnl: t.pnl,
+            valid: t.valid,
+          }))
+        );
+      }
+    };
+
+    loadTrades();
+
     const savedStreak = localStorage.getItem("streak");
     const savedDate = localStorage.getItem("lastDate");
 
-    if (savedTrades) setTrades(JSON.parse(savedTrades));
     if (savedStreak) setStreak(Number(savedStreak));
     if (savedDate) setLastDate(savedDate);
-  }, [today]);
-
-  // SAVE
-  useEffect(() => {
-    localStorage.setItem("trades_" + today, JSON.stringify(trades));
-  }, [trades, today]);
+  }, []);
 
   // STATS
   const stats = useMemo(() => {
@@ -55,14 +65,12 @@ export default function Page() {
     return { totalPnL: total, discipline };
   }, [trades]);
 
-  // ✅ SMART DISCIPLINED DAY LOGIC
+  // SMART DAY
   const isDisciplinedDay =
     trades.length > 0 &&
-    (
-      trades.length < 3
-        ? stats.discipline === 100
-        : stats.discipline >= 80
-    );
+    (trades.length < 3
+      ? stats.discipline === 100
+      : stats.discipline >= 80);
 
   // GRAPH DATA
   const graphData = useMemo(() => {
@@ -80,55 +88,65 @@ export default function Page() {
     });
   }, [trades]);
 
-  // ADD TRADE
-  const handleAddTrade = () => {
+  // ADD TRADE (SUPABASE)
+  const handleAddTrade = async () => {
     if (!pnl) return;
 
     const value = Number(pnl.replace(",", "."));
     if (isNaN(value)) return;
 
-    const newTrades = [...trades, { pnl: value, valid: isValid }];
-    setTrades(newTrades);
+    const { error } = await supabase.from("trades").insert([
+      {
+        pnl: value,
+        valid: isValid,
+      },
+    ]);
 
-    setPnl("");
+    if (!error) {
+      const newTrades = [...trades, { pnl: value, valid: isValid }];
+      setTrades(newTrades);
+      setPnl("");
 
-    // CHECK DISCIPLINE AFTER TRADE
-    let validCount = 0;
-    newTrades.forEach(t => { if (t.valid) validCount++; });
+      // STREAK
+      let validCount = 0;
+      newTrades.forEach((t) => {
+        if (t.valid) validCount++;
+      });
 
-    const discipline = Math.round((validCount / newTrades.length) * 100);
-
-    const disciplined =
-      newTrades.length > 0 &&
-      (
-        newTrades.length < 3
-          ? discipline === 100
-          : discipline >= 80
+      const discipline = Math.round(
+        (validCount / newTrades.length) * 100
       );
 
-    if (disciplined) {
-      if (lastDate !== today) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const y = yesterday.toLocaleDateString("sv-SE");
+      const disciplined =
+        newTrades.length > 0 &&
+        (newTrades.length < 3
+          ? discipline === 100
+          : discipline >= 80);
 
-        if (lastDate === y) {
-          setStreak((s) => {
-            const newStreak = s + 1;
+      if (disciplined) {
+        if (lastDate !== today) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const y = yesterday.toLocaleDateString("sv-SE");
+
+          if (lastDate === y) {
+            const newStreak = streak + 1;
+            setStreak(newStreak);
             localStorage.setItem("streak", String(newStreak));
-            return newStreak;
-          });
-        } else {
-          setStreak(1);
-          localStorage.setItem("streak", "1");
-        }
+          } else {
+            setStreak(1);
+            localStorage.setItem("streak", "1");
+          }
 
-        setLastDate(today);
-        localStorage.setItem("lastDate", today);
+          setLastDate(today);
+          localStorage.setItem("lastDate", today);
+        }
+      } else {
+        setStreak(0);
+        localStorage.setItem("streak", "0");
       }
     } else {
-      setStreak(0);
-      localStorage.setItem("streak", "0");
+      console.log(error);
     }
   };
 
@@ -142,7 +160,6 @@ export default function Page() {
       maxWidth: 500,
       margin: "0 auto"
     }}>
-      {/* TITLE */}
       <h1 style={{
         textAlign: "center",
         fontSize: 36,
@@ -154,7 +171,6 @@ export default function Page() {
         Trading Discipline
       </h1>
 
-      {/* STATUS */}
       <h2 style={{
         textAlign: "center",
         color: isValid ? "#00ffaa" : "#ff4d4f"
@@ -162,19 +178,16 @@ export default function Page() {
         {isValid ? "VALID SETUP" : "INVALID SETUP"}
       </h2>
 
-      {/* CHECKLIST */}
       <div style={{ display: "flex", justifyContent: "space-between", margin: 16 }}>
         <label><input type="checkbox" checked={checklist.level} onChange={e=>setChecklist({...checklist,level:e.target.checked})}/> Level</label>
         <label><input type="checkbox" checked={checklist.confirmation} onChange={e=>setChecklist({...checklist,confirmation:e.target.checked})}/> Confirmation</label>
         <label><input type="checkbox" checked={checklist.rr} onChange={e=>setChecklist({...checklist,rr:e.target.checked})}/> RR</label>
       </div>
 
-      {/* DISCIPLINE + STREAK */}
       <p style={{ textAlign: "center" }}>
         Discipline: {stats.discipline}% | 🔥 {streak} days
       </p>
 
-      {/* PERFECT DAY INDICATOR */}
       {isDisciplinedDay && (
         <p style={{
           textAlign: "center",
@@ -185,7 +198,6 @@ export default function Page() {
         </p>
       )}
 
-      {/* INPUT */}
       <div style={{ display: "flex", gap: 8 }}>
         <input
           type="text"
@@ -233,7 +245,6 @@ export default function Page() {
         </svg>
       </div>
 
-      {/* PNL */}
       <p style={{ textAlign: "center", marginTop: 10 }}>
         PnL: ${stats.totalPnL}
       </p>
