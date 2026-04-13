@@ -234,18 +234,8 @@ export default function Page() {
 
       
  {/* 📈 GRAPH */}
-<div style={{ marginTop: 20 }}>
+<div style={{ marginTop: 10 }}>
   <svg width="100%" height="160">
-
-    <defs>
-      <filter id="glow">
-        <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
-        <feMerge>
-          <feMergeNode in="coloredBlur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-    </defs>
 
     {(() => {
       const pnls = graphData.map((g) => g.pnl);
@@ -268,12 +258,15 @@ export default function Page() {
         const y1 = 100 - ((prev.pnl - min) / range) * 100;
         const y2 = 100 - ((d.pnl - min) / range) * 100;
 
-        // 🔵 Discipline
+        // 🔵 Discipline (amplified + clamped)
         const d1 = clamp(50 - (prev.discipline - 50) * amplify);
         const d2 = clamp(50 - (d.discipline - 50) * amplify);
 
+        const trendUp = d.discipline > prev.discipline;
+
         return (
           <g key={i}>
+            {/* PnL */}
             <line
               x1={`${x1}%`}
               y1={`${y1}%`}
@@ -284,35 +277,32 @@ export default function Page() {
               strokeLinecap="round"
             />
 
+            {/* Discipline */}
             <line
               x1={`${x1}%`}
               y1={`${d1}%`}
               x2={`${x2}%`}
               y2={`${d2}%`}
-              stroke="#3b82f6cc"
+              stroke={trendUp ? "#00ffaa" : "#ff4d4f"}
               strokeWidth="3"
               strokeLinecap="round"
-              filter="url(#glow)"
+              strokeLinejoin="round"
             />
           </g>
         );
       });
     })()}
 
-    {/* 🔥 LAST POINT */}
-    {(() => {
-      if (graphData.length === 0) return null;
-
+    {/* 🔵 LAST POINT */}
+    {graphData.length > 0 && (() => {
       const last = graphData[graphData.length - 1];
       const amplify = 1.4;
       const clamp = (v: number) => Math.max(5, Math.min(95, v));
 
-      const y = clamp(50 - (last.discipline - 50) * amplify);
-
       return (
         <circle
-          cx="100%"
-          cy={`${y}%`}
+          cx="95%"
+          cy={`${clamp(50 - (last.discipline - 50) * amplify)}%`}
           r="5"
           fill="#3b82f6"
         />
@@ -320,7 +310,7 @@ export default function Page() {
     })()}
 
   </svg>
-
+</div>
   {/* ✅ TEXT UTANFÖR SVG */}
   <p
     style={{
