@@ -6,10 +6,9 @@ import { supabase } from "../../lib/supabase";
 type ChecklistKey = "level" | "confirmation" | "rr";
 
 export default function Page() {
-  console.log("PAGE RENDER");
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
-  const [isPro, setIsPro] = useState(true); // TEMP
+  const [isPro, setIsPro] = useState(true);
 
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
@@ -41,7 +40,7 @@ export default function Page() {
     };
   }, []);
 
-  // LOAD DATA
+  // LOAD
   useEffect(() => {
     if (!user) return;
 
@@ -90,11 +89,17 @@ export default function Page() {
     });
   }, [trades]);
 
+  // NORMALIZE GRAPH
+  const pnls = graphData.map((g) => g.pnl);
+  const max = Math.max(...pnls, 1);
+  const min = Math.min(...pnls, 0);
+  const range = max - min || 1;
+
   const clamp = (v: number) => Math.max(5, Math.min(95, v));
   const amplify = 1.4;
 
-  const last = graphData.length > 0 ? graphData[graphData.length - 1] : null;
-  const prev = graphData.length > 1 ? graphData[graphData.length - 2] : null;
+  const last = graphData.at(-1);
+  const prev = graphData.at(-2);
 
   const improving =
     last && prev ? last.discipline > prev.discipline : true;
@@ -122,61 +127,49 @@ export default function Page() {
     );
   };
 
-// LOGIN
-if (!user) {
-  return (
-    <div style={styles.center}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Trading Discipline</h1>
+  // LOGIN
+  if (!user) {
+    return (
+      <div style={styles.center}>
+        <div style={styles.card}>
+          <h1 style={styles.title}>Trading Discipline</h1>
 
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
-        />
+          <div style={styles.form}>
+            <input
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={styles.input}
+            />
 
-        <button
-          style={styles.btnPrimary}
-          onClick={async () => {
-            if (!email) {
-              alert("Enter email");
-              return;
-            }
+            <button
+              style={styles.btnPrimary}
+              onClick={async () => {
+                if (!email) return alert("Enter email");
 
-            console.log("LOGIN CLICK");
+                const { error } = await supabase.auth.signInWithOtp({
+                  email,
+                  options: {
+                    emailRedirectTo:
+                      "https://trading-app-three-gamma.vercel.app/auth/callback",
+                  },
+                });
 
-            try {
-              const { error } = await supabase.auth.signInWithOtp({
-                email,
-                options: {
-                  emailRedirectTo:
-                    "https://trading-app-three-gamma.vercel.app/auth/callback",
-                },
-              });
+                if (error) alert(error.message);
+                else alert("Magic link sent ✉️");
+              }}
+            >
+              Send Magic Link
+            </button>
+          </div>
 
-              if (error) {
-                console.error("LOGIN ERROR:", error);
-                alert(error.message);
-              } else {
-                alert("Magic link sent ✉️");
-              }
-            } catch (err) {
-              console.error("LOGIN CRASH:", err);
-              alert("Something went wrong");
-            }
-          }}
-        >
-          Send Magic Link
-        </button>
-
-        <p style={{ marginTop: 15, color: "#888", fontSize: 14 }}>
-          We’ll send you a login link
-        </p>
+          <p style={styles.helper}>
+            We’ll send you a login link
+          </p>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div style={styles.page}>
@@ -198,27 +191,30 @@ if (!user) {
 
         {/* CHECKLIST */}
         <div style={styles.checklist}>
-          {(["level", "confirmation", "rr"] as ChecklistKey[]).map(
-            (key) => (
-              <div
-                key={key}
-                style={{
-                  ...styles.checkItem,
-                  border: checklist[key]
-                    ? "1px solid #00ffaa"
-                    : "1px solid #333",
-                }}
-                onClick={() =>
-                  setChecklist({
-                    ...checklist,
-                    [key]: !checklist[key],
-                  })
-                }
-              >
-                {key}
-              </div>
-            )
-          )}
+          {[
+            { key: "level", label: "Level" },
+            { key: "confirmation", label: "Confirmation" },
+            { key: "rr", label: "RR" },
+          ].map((item) => (
+            <div
+              key={item.key}
+              style={{
+                ...styles.checkItem,
+                border: checklist[item.key as ChecklistKey]
+                  ? "1px solid #00ffaa"
+                  : "1px solid #333",
+              }}
+              onClick={() =>
+                setChecklist({
+                  ...checklist,
+                  [item.key as ChecklistKey]:
+                    !checklist[item.key as ChecklistKey],
+                })
+              }
+            >
+              {item.label}
+            </div>
+          ))}
         </div>
 
         {/* INPUT */}
@@ -252,8 +248,10 @@ if (!user) {
               const x1 = ((i - 1) / graphData.length) * 100;
               const x2 = (i / graphData.length) * 100;
 
-              const y1 = 100 - prev.pnl;
-              const y2 = 100 - d.pnl;
+              const y1 =
+                100 - ((prev.pnl - min) / range) * 100;
+              const y2 =
+                100 - ((d.pnl - min) / range) * 100;
 
               const d1 = clamp(50 - (prev.discipline - 50) * amplify);
               const d2 = clamp(50 - (d.discipline - 50) * amplify);
@@ -293,35 +291,29 @@ if (!user) {
           {improving ? "Improving" : "Slipping"}
         </p>
 
-        {/* CHECKOUT BUTTON */}
+        {/* CHECKOUT */}
         <button
           onClick={async () => {
-            console.log("CLICK");
+            try {
+              const res = await fetch("/api/checkout", {
+                method: "POST",
+              });
 
-            const res = await fetch("/api/checkout", {
-              method: "POST",
-            });
+              if (!res.ok) throw new Error("API error");
 
-            const data = await res.json();
-            console.log(data);
+              const data = await res.json();
 
-            if (data?.url) {
-              window.location.href = data.url;
-            } else {
-              alert("Checkout failed");
+              if (data?.url) {
+                window.location.assign(data.url);
+              } else {
+                alert("Checkout failed");
+              }
+            } catch (err) {
+              console.error(err);
+              alert("Something went wrong");
             }
           }}
-          style={{
-            marginTop: 20,
-            padding: 16,
-            width: "100%",
-            background: "#00ffaa",
-            color: "#000",
-            borderRadius: 10,
-            border: "none",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
+          style={styles.btnPrimary}
         >
           Unlock your discipline
         </button>
@@ -340,6 +332,7 @@ if (!user) {
 const styles: any = {
   page: { background: "#020617", minHeight: "100vh", padding: 20 },
   container: { maxWidth: 500, margin: "0 auto", color: "#fff" },
+
   center: {
     display: "flex",
     justifyContent: "center",
@@ -347,20 +340,45 @@ const styles: any = {
     height: "100vh",
     background: "#020617",
   },
+
+  card: {
+    background: "#0f172a",
+    padding: 24,
+    borderRadius: 14,
+    width: "100%",
+    maxWidth: 380,
+  },
+
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
+
+  helper: {
+    marginTop: 12,
+    color: "#888",
+    textAlign: "center",
+  },
+
   title: {
     textAlign: "center",
     fontSize: 32,
     color: "#00ffaa",
     marginBottom: 20,
   },
+
   grid: { display: "flex", gap: 12, marginBottom: 15 },
+
   cardSmall: {
     flex: 1,
     background: "#111827",
     padding: 15,
     borderRadius: 10,
   },
+
   checklist: { display: "flex", gap: 10, marginBottom: 15 },
+
   checkItem: {
     flex: 1,
     padding: 10,
@@ -368,13 +386,26 @@ const styles: any = {
     borderRadius: 8,
     cursor: "pointer",
   },
+
   inputRow: { display: "flex", gap: 10 },
-  input: { flex: 1, padding: 10, borderRadius: 8, border: "none" },
+
+  input: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 8,
+    border: "none",
+  },
+
   btnPrimary: {
-    padding: 12,
+    marginTop: 10,
+    padding: 14,
     borderRadius: 8,
     border: "none",
     cursor: "pointer",
+    background: "#00ffaa",
+    color: "#000",
+    fontWeight: "bold",
   },
+
   logout: { marginTop: 30, color: "#888" },
 };
