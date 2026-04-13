@@ -30,12 +30,21 @@ export default function Page() {
     checklist.level && checklist.confirmation && checklist.rr;
 
   // AUTH
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    supabase.auth.onAuthStateChange((_e, session) =>
-      setUser(session?.user || null)
-    );
-  }, []);
+useEffect(() => {
+  supabase.auth.getSession().then(({ data }) => {
+    setUser(data.session?.user || null);
+  });
+
+  const { data: listener } = supabase.auth.onAuthStateChange(
+    (_event, session) => {
+      setUser(session?.user || null);
+    }
+  );
+
+  return () => {
+    listener.subscription.unsubscribe();
+  };
+}, []);
 
   // LOAD
   useEffect(() => {
@@ -184,7 +193,12 @@ export default function Page() {
           <button
             style={styles.btnPrimary}
             onClick={async () => {
-              await supabase.auth.signInWithOtp({ email });
+             await supabase.auth.signInWithOtp({
+  		email,
+  		options: {
+  	  emailRedirectTo: "http://localhost:3000/auth/callback",
+ 	 },
+	});
               alert("Check mail ✉️");
             }}
           >
