@@ -8,14 +8,13 @@ type ChecklistKey = "level" | "confirmation" | "rr";
 export default function Page() {
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
+
   const [isPro, setIsPro] = useState(false);
 
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
 
   const [feedback, setFeedback] = useState("");
-  const [streak, setStreak] = useState(0);
-  const [lastDate, setLastDate] = useState("");
 
   const [checklist, setChecklist] = useState<Record<ChecklistKey, boolean>>({
     level: false,
@@ -26,7 +25,7 @@ export default function Page() {
   const isValid =
     checklist.level && checklist.confirmation && checklist.rr;
 
-  // 🔐 AUTH
+  // AUTH
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user || null);
@@ -43,21 +42,10 @@ export default function Page() {
     };
   }, []);
 
-  // 👤 CREATE PROFILE
+  // LOAD DATA
   useEffect(() => {
     if (!user) return;
 
-    supabase.from("profiles").upsert({
-      id: user.id,
-      email: user.email,
-    });
-  }, [user]);
-
-  // 🔥 LOAD ALL DATA
-  useEffect(() => {
-    if (!user) return;
-
-    // trades
     supabase
       .from("trades")
       .select("*")
@@ -67,26 +55,11 @@ export default function Page() {
         if (data) setTrades(data);
       });
 
-    // pro status
-    supabase
-      .from("profiles")
-      .select("is_pro")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) setIsPro(data.is_pro);
-      });
-
-    // streak
-    const savedStreak = localStorage.getItem("streak");
-    const savedDate = localStorage.getItem("lastDate");
-
-    if (savedStreak) setStreak(Number(savedStreak));
-    if (savedDate) setLastDate(savedDate);
-
+    // TEMP PRO (ta bort senare)
+    setIsPro(true);
   }, [user]);
 
-  // 📊 STATS
+  // STATS
   const stats = useMemo(() => {
     let total = 0;
     let valid = 0;
@@ -105,7 +78,7 @@ export default function Page() {
     };
   }, [trades]);
 
-  // 📈 GRAPH DATA
+  // GRAPH DATA
   const graphData = useMemo(() => {
     let pnlRunning = 0;
     let validCount = 0;
@@ -121,7 +94,10 @@ export default function Page() {
     });
   }, [trades]);
 
-  // ➕ ADD TRADE
+  const clamp = (v: number) => Math.max(5, Math.min(95, v));
+  const amplify = 1.4;
+
+  // ADD TRADE
   const handleAddTrade = async () => {
     if (!pnl || !user) return;
 
@@ -134,17 +110,18 @@ export default function Page() {
       { ...newTrade, user_id: user.id },
     ]);
 
-    setTrades([...trades, newTrade]);
+    const newTrades = [...trades, newTrade];
+    setTrades(newTrades);
     setPnl("");
 
     setFeedback(
       isValid
-        ? "✅ You followed your system"
-        : "❌ You broke your rules"
+        ? "You followed your system"
+        : "You broke your rules"
     );
   };
 
-  // 🔐 LOGIN
+  // LOGIN
   if (!user) {
     return (
       <div style={styles.center}>
@@ -170,7 +147,7 @@ export default function Page() {
               });
 
               if (error) alert(error.message);
-              else alert("Check mail ✉️");
+              else alert("Check mail");
             }}
           >
             Send Magic Link
@@ -180,12 +157,14 @@ export default function Page() {
     );
   }
 
+  const last = graphData[graphData.length - 1];
+  const prev = graphData[graphData.length - 2];
+  const improving = last?.discipline > prev?.discipline;
+
   return (
     <div style={styles.page}>
       <div style={styles.container}>
         <h1 style={styles.title}>Trading Discipline</h1>
-
-        <p style={{ textAlign: "center" }}>🔥 {streak} days</p>
 
         {/* STATS */}
         <div style={styles.grid}>
@@ -247,66 +226,100 @@ export default function Page() {
           </button>
         </div>
 
-        {/* 🔒 GRAPH */}
-        <div style={{ marginTop: 20, position: "relative" }}>
-          {!isPro && (
-            <div style={styles.overlay}>
-              <p style={{ marginBottom: 10, fontWeight: "bold" }}>
-                See your discipline pattern
-              </p>
+        {/* GRAPH */}
+        <div
+          style={{
+            marginTop: 20,
+            filter: !isPro ? "blur(6px)" : "none",
+            opacity: !isPro ? 0.6 : 1,
+          }}
+        >
+          <svg width="100%" height="160">
+            {(() => {
+              const pnls = graphData.map((g) => g.pnl);
+              const max = Math.max(...pnls, 1);
+              const min = Math.min(...pnls, 0);
+              const range = max - min || 1;
 
-              <button
-                style={styles.btnPrimary}
-                onClick={async () => {
-                  const res = await fetch("/api/checkout", {
-                    method: "POST",
-                  });
-                  const data = await res.json();
-                  window.location.href = data.url;
-                }}
-              >
-                Unlock 🚀
-              </button>
-            </div>
-          )}
+              return graphData.map((d, i) => {
+                if (i === 0) return null;
+                const prev = graphData[i - 1];
 
-          <svg width="100%" height="140">
-            {graphData.map((d, i) => {
-              if (i === 0) return null;
-              const prev = graphData[i - 1];
+                const x1 = ((i - 1) / graphData.length) * 100;
+                const x2 = (i / graphData.length) * 100;
 
-              const x1 = ((i - 1) / graphData.length) * 100;
-              const x2 = (i / graphData.length) * 100;
+                const y1 = 100 - ((prev.pnl - min) / range) * 100;
+                const y2 = 100 - ((d.pnl - min) / range) * 100;
 
-              return (
-                <line
-                  key={i}
-                  x1={`${x1}%`}
-                  y1={`${100 - prev.discipline}%`}
-                  x2={`${x2}%`}
-                  y2={`${100 - d.discipline}%`}
-                  stroke="#3b82f6"
-                  strokeWidth="2"
-                />
-              );
-            })}
+                const d1 = clamp(50 - (prev.discipline - 50) * amplify);
+                const d2 = clamp(50 - (d.discipline - 50) * amplify);
+
+                return (
+                  <g key={i}>
+                    {/* PnL */}
+                    <line
+                      x1={`${x1}%`}
+                      y1={`${y1}%`}
+                      x2={`${x2}%`}
+                      y2={`${y2}%`}
+                      stroke="#00ffaa44"
+                      strokeWidth="2"
+                    />
+
+                    {/* Discipline */}
+                    <line
+                      x1={`${x1}%`}
+                      y1={`${d1}%`}
+                      x2={`${x2}%`}
+                      y2={`${d2}%`}
+                      stroke="#3b82f6"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                  </g>
+                );
+              });
+            })()}
+
+            {/* LAST POINT */}
+            {last && (
+              <circle
+                cx={`${((graphData.length - 1) / graphData.length) * 100}%`}
+                cy={`${clamp(50 - (last.discipline - 50) * amplify)}%`}
+                r="6"
+                stroke="#3b82f6"
+                strokeWidth="2"
+                fill="#020617"
+              />
+            )}
           </svg>
         </div>
 
         {/* STATUS */}
-        <p style={{ textAlign: "center", marginTop: 10 }}>
-          {stats.discipline > 70 ? "On track" : "Slipping"}
+        <p
+          style={{
+            marginTop: 20,
+            color: improving ? "#00ffaa" : "#ff4d4f",
+          }}
+        >
+          {improving ? "Discipline improving" : "Discipline slipping"}
         </p>
 
-        {/* PRO STATUS */}
-        {isPro ? (
-          <p style={{ color: "#00ffaa", textAlign: "center" }}>
-            ✅ You are Pro
-          </p>
-        ) : (
-          <button style={styles.btnPrimary}>
-            Upgrade to Pro 🚀
-          </button>
+        {/* PAYWALL */}
+        {!isPro && (
+          <div style={{ marginTop: 40, textAlign: "center" }}>
+            <p style={{ fontSize: 18, marginBottom: 10 }}>
+              See your discipline pattern
+            </p>
+
+            <p style={{ color: "#888", marginBottom: 25 }}>
+              Most traders fail because they break their rules.
+            </p>
+
+            <button style={styles.btnPrimary}>
+              Unlock your edge
+            </button>
+          </div>
         )}
 
         <button
@@ -323,26 +336,44 @@ export default function Page() {
 const styles: any = {
   page: { background: "#020617", minHeight: "100vh", padding: 20 },
   container: { maxWidth: 500, margin: "0 auto", color: "#fff" },
-  center: { display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#020617" },
-  title: { textAlign: "center", fontSize: 32, color: "#00ffaa", marginBottom: 20 },
-  grid: { display: "flex", gap: 12, marginBottom: 15 },
-  cardSmall: { flex: 1, background: "#111827", padding: 15, borderRadius: 10 },
-  checklist: { display: "flex", gap: 10, marginBottom: 15 },
-  checkItem: { flex: 1, padding: 10, textAlign: "center", borderRadius: 8, cursor: "pointer" },
-  inputRow: { display: "flex", gap: 10 },
-  input: { flex: 1, padding: 10, borderRadius: 8, border: "none" },
-  btnPrimary: { padding: 10, borderRadius: 8, border: "none", cursor: "pointer" },
-  overlay: {
-    position: "absolute",
-    inset: 0,
-    backdropFilter: "blur(6px)",
-    background: "rgba(2,6,23,0.6)",
+  center: {
     display: "flex",
-    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 10,
-    zIndex: 10,
+    height: "100vh",
+    background: "#020617",
   },
-  logout: { marginTop: 20, color: "#888" },
+  title: {
+    textAlign: "center",
+    fontSize: 32,
+    color: "#00ffaa",
+    marginBottom: 20,
+  },
+  grid: { display: "flex", gap: 12, marginBottom: 15 },
+  cardSmall: {
+    flex: 1,
+    background: "#111827",
+    padding: 15,
+    borderRadius: 10,
+  },
+  checklist: { display: "flex", gap: 10, marginBottom: 15 },
+  checkItem: {
+    flex: 1,
+    padding: 10,
+    textAlign: "center",
+    borderRadius: 8,
+    cursor: "pointer",
+  },
+  inputRow: { display: "flex", gap: 10 },
+  input: { flex: 1, padding: 10, borderRadius: 8, border: "none" },
+  btnPrimary: {
+    padding: 12,
+    borderRadius: 8,
+    border: "none",
+    cursor: "pointer",
+    background: "#00ffaa",
+    color: "#000",
+    fontWeight: "600",
+  },
+  logout: { marginTop: 30, color: "#888" },
 };
