@@ -233,41 +233,73 @@ export default function Page() {
         </div>
 
         {/* 📈 GRAPH */}
-       <div style={{ marginTop: 30 }}>
+      <div style={{ marginTop: 30 }}>
   <svg width="100%" height="200">
+
+    <defs>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+        <feMerge>
+          <feMergeNode in="coloredBlur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
+
     {(() => {
       const pnls = graphData.map((g) => g.pnl);
       const max = Math.max(...pnls, 1);
       const min = Math.min(...pnls, 0);
       const range = max - min || 1;
 
+      const amplify = 2.5;
+
       return graphData.map((d, i) => {
         if (i === 0) return null;
-
         const prev = graphData[i - 1];
 
         const x1 = ((i - 1) / graphData.length) * 100;
         const x2 = (i / graphData.length) * 100;
 
+        // PnL
         const y1 = 100 - ((prev.pnl - min) / range) * 100;
         const y2 = 100 - ((d.pnl - min) / range) * 100;
 
+        // 🔥 Amplified discipline
+        const d1 = 50 - (prev.discipline - 50) * amplify;
+        const d2 = 50 - (d.discipline - 50) * amplify;
+
         return (
-          <line
-            key={i}
-            x1={`${x1}%`}
-            y1={`${y1}%`}
-            x2={`${x2}%`}
-            y2={`${y2}%`}
-            stroke="#00ffaa"
-            strokeWidth="2"
-          />
+          <g key={i}>
+            {/* PnL */}
+            <line
+              x1={`${x1}%`}
+              y1={`${y1}%`}
+              x2={`${x2}%`}
+              y2={`${y2}%`}
+              stroke="#00ffaa"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+
+            {/* Discipline */}
+            <line
+              x1={`${x1}%`}
+              y1={`${d1}%`}
+              x2={`${x2}%`}
+              y2={`${d2}%`}
+              stroke="#3b82f6"
+              strokeWidth="3"
+              strokeLinecap="round"
+              filter="url(#glow)"
+            />
+          </g>
         );
       });
     })()}
+
   </svg>
 </div>
-
         {!isPro ? (
           <button style={styles.btnPrimary}>
             Upgrade to Pro 🚀
