@@ -122,23 +122,31 @@ export default function Page() {
     );
   };
 
-  // LOGIN
-  if (!user) {
-    return (
-      <div style={styles.center}>
-        <div style={styles.card}>
-          <h1 style={styles.title}>Trading Discipline</h1>
+// LOGIN
+if (!user) {
+  return (
+    <div style={styles.center}>
+      <div style={styles.card}>
+        <h1 style={styles.title}>Trading Discipline</h1>
 
-          <input
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-          />
+        <input
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
 
-          <button
-            style={styles.btnPrimary}
-            onClick={async () => {
+        <button
+          style={styles.btnPrimary}
+          onClick={async () => {
+            if (!email) {
+              alert("Enter email");
+              return;
+            }
+
+            console.log("LOGIN CLICK");
+
+            try {
               const { error } = await supabase.auth.signInWithOtp({
                 email,
                 options: {
@@ -147,16 +155,28 @@ export default function Page() {
                 },
               });
 
-              if (error) alert(error.message);
-              else alert("Check mail");
-            }}
-          >
-            Send Magic Link
-          </button>
-        </div>
+              if (error) {
+                console.error("LOGIN ERROR:", error);
+                alert(error.message);
+              } else {
+                alert("Magic link sent ✉️");
+              }
+            } catch (err) {
+              console.error("LOGIN CRASH:", err);
+              alert("Something went wrong");
+            }
+          }}
+        >
+          Send Magic Link
+        </button>
+
+        <p style={{ marginTop: 15, color: "#888", fontSize: 14 }}>
+          We’ll send you a login link
+        </p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div style={styles.page}>
