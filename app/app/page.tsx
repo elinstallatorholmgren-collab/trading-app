@@ -185,7 +185,10 @@ useEffect(() => {
   }}
 >
   {loading ? "Sending..." : "Send Magic Link"}
-</button>        {/* CHECKLIST */}
+</button>       
+ 
+
+	{/* CHECKLIST */}
         <div style={styles.checklist}>
           {[
             { key: "level", label: "Level" },
