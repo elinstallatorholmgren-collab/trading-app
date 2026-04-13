@@ -232,8 +232,9 @@ export default function Page() {
           </button>
         </div>
 
-        {/* 📈 GRAPH */}
-    <div style={{ marginTop: 20 }}>
+      
+ {/* 📈 GRAPH */}
+<div style={{ marginTop: 20 }}>
   <svg width="100%" height="160">
 
     <defs>
@@ -257,32 +258,22 @@ export default function Page() {
 
       return graphData.map((d, i) => {
         if (i === 0) return null;
+
         const prev = graphData[i - 1];
 
         const x1 = ((i - 1) / graphData.length) * 100;
         const x2 = (i / graphData.length) * 100;
 
-        // 🟢 PnL (diskret)
+        // 🟢 PnL
         const y1 = 100 - ((prev.pnl - min) / range) * 100;
         const y2 = 100 - ((d.pnl - min) / range) * 100;
 
-        // 🔵 Discipline (amplified + clamped)
+        // 🔵 Discipline
         const d1 = clamp(50 - (prev.discipline - 50) * amplify);
         const d2 = clamp(50 - (d.discipline - 50) * amplify);
-	const last = graphData[graphData.length - 1];
-	<circle
- 	 cx="100%"
-	 cy={`${clamp(50 - (last.discipline - 50) * amplify)}%`}
- 	 r="5"
- 	 fill="#3b82f6"
-	/>
-	<p style={{ color: stats.discipline > 70 ? "#00ffaa" : "#ff4d4f" }}>
- 	 {stats.discipline > 70 ? "On track" : "Slipping"}
-	</p>
 
         return (
           <g key={i}>
-            {/* PnL */}
             <line
               x1={`${x1}%`}
               y1={`${y1}%`}
@@ -293,7 +284,6 @@ export default function Page() {
               strokeLinecap="round"
             />
 
-            {/* Discipline */}
             <line
               x1={`${x1}%`}
               y1={`${d1}%`}
@@ -309,8 +299,40 @@ export default function Page() {
       });
     })()}
 
+    {/* 🔥 LAST POINT */}
+    {(() => {
+      if (graphData.length === 0) return null;
+
+      const last = graphData[graphData.length - 1];
+      const amplify = 1.4;
+      const clamp = (v: number) => Math.max(5, Math.min(95, v));
+
+      const y = clamp(50 - (last.discipline - 50) * amplify);
+
+      return (
+        <circle
+          cx="100%"
+          cy={`${y}%`}
+          r="5"
+          fill="#3b82f6"
+        />
+      );
+    })()}
+
   </svg>
+
+  {/* ✅ TEXT UTANFÖR SVG */}
+  <p
+    style={{
+      textAlign: "center",
+      marginTop: 10,
+      color: stats.discipline > 70 ? "#00ffaa" : "#ff4d4f",
+    }}
+  >
+    {stats.discipline > 70 ? "On track" : "Slipping"}
+  </p>
 </div>
+
         {!isPro ? (
           <button style={styles.btnPrimary}>
             Upgrade to Pro 🚀
