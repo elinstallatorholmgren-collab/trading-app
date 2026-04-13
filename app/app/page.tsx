@@ -233,12 +233,12 @@ export default function Page() {
         </div>
 
         {/* 📈 GRAPH */}
-      <div style={{ marginTop: 30 }}>
+    <div style={{ marginTop: 30 }}>
   <svg width="100%" height="200">
 
     <defs>
       <filter id="glow">
-        <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+        <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
         <feMerge>
           <feMergeNode in="coloredBlur" />
           <feMergeNode in="SourceGraphic" />
@@ -252,7 +252,8 @@ export default function Page() {
       const min = Math.min(...pnls, 0);
       const range = max - min || 1;
 
-      const amplify = 2.5;
+      const amplify = 1.4;
+      const clamp = (v: number) => Math.max(5, Math.min(95, v));
 
       return graphData.map((d, i) => {
         if (i === 0) return null;
@@ -261,13 +262,13 @@ export default function Page() {
         const x1 = ((i - 1) / graphData.length) * 100;
         const x2 = (i / graphData.length) * 100;
 
-        // PnL
+        // 🟢 PnL (diskret)
         const y1 = 100 - ((prev.pnl - min) / range) * 100;
         const y2 = 100 - ((d.pnl - min) / range) * 100;
 
-        // 🔥 Amplified discipline
-        const d1 = 50 - (prev.discipline - 50) * amplify;
-        const d2 = 50 - (d.discipline - 50) * amplify;
+        // 🔵 Discipline (amplified + clamped)
+        const d1 = clamp(50 - (prev.discipline - 50) * amplify);
+        const d2 = clamp(50 - (d.discipline - 50) * amplify);
 
         return (
           <g key={i}>
@@ -277,7 +278,7 @@ export default function Page() {
               y1={`${y1}%`}
               x2={`${x2}%`}
               y2={`${y2}%`}
-              stroke="#00ffaa"
+              stroke="#00ffaa66"
               strokeWidth="2"
               strokeLinecap="round"
             />
@@ -288,7 +289,7 @@ export default function Page() {
               y1={`${d1}%`}
               x2={`${x2}%`}
               y2={`${d2}%`}
-              stroke="#3b82f6"
+              stroke="#3b82f6cc"
               strokeWidth="3"
               strokeLinecap="round"
               filter="url(#glow)"
