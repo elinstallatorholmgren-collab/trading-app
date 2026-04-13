@@ -307,10 +307,15 @@ export default function Page() {
 
 <button
   onClick={async () => {
+    console.log("CLICK");
+
     const res = await fetch("/api/checkout", {
       method: "POST",
     });
+
     const data = await res.json();
+    console.log("DATA:", data);
+
     window.location.href = data.url;
   }}
   style={{
@@ -323,7 +328,7 @@ export default function Page() {
     border: "none",
     fontWeight: "bold",
     fontSize: 16,
-    cursor: "pointer"
+    cursor: "pointer",
   }}
 >
   Unlock your discipline
