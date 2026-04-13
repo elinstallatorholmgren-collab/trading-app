@@ -180,52 +180,45 @@ useEffect(() => {
     }
   };
 
-  // LOGIN
-  if (!user) {
-    return (
-      <div style={styles.center}>
-        <div style={styles.card}>
-          <h1 style={styles.title}>Trading Discipline</h1>
-          <input
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
-          />
-          <button
-            style={styles.btnPrimary}
-           onClick={async () => {
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: "https://trading-app-three-gamma.vercel.app/auth/callback",
-    },
-  });
-
-  if (error) {
-    console.error("LOGIN ERROR:", error);
-    alert("Something went wrong: " + error.message);
-  } else {
-    alert("Check mail ✉️");
-  }
-}}
-
+// LOGIN
+if (!user) {
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
+    <div style={styles.center}>
+      <div style={styles.card}>
         <h1 style={styles.title}>Trading Discipline</h1>
 
-        {/* STATUS */}
-        <div
-          style={{
-            ...styles.status,
-            background: isValid ? "#00ffaa22" : "#ff4d4f22",
-            color: isValid ? "#00ffaa" : "#ff4d4f",
+        <input
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
+
+        <button
+          style={styles.btnPrimary}
+          onClick={async () => {
+            const { error } = await supabase.auth.signInWithOtp({
+              email,
+              options: {
+                emailRedirectTo:
+                  "https://trading-app-three-gamma.vercel.app/auth/callback",
+              },
+            });
+
+            if (error) {
+              console.error("LOGIN ERROR:", error);
+              alert("Something went wrong: " + error.message);
+            } else {
+              alert("Check mail ✉️");
+            }
           }}
         >
-          {isValid ? "VALID SETUP" : "INVALID SETUP"}
-        </div>
-
+          Send Magic Link
+        </button>
+      </div>
+    </div>
+  );
+}
         {/* FEEDBACK */}
         {feedback && (
           <p style={{ textAlign: "center", marginTop: 10 }}>
