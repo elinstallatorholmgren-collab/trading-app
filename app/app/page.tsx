@@ -311,6 +311,7 @@ export default function Page() {
 
   </svg>
 </div>
+
   {/* ✅ TEXT UTANFÖR SVG */}
   <p
     style={{
