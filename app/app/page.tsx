@@ -6,15 +6,24 @@ import { supabase } from "@/lib/supabase";
 export default function Callback() {
   useEffect(() => {
     const run = async () => {
-      const { error } = await supabase.auth.exchangeCodeForSession(
-        window.location.href
-      );
+      console.log("CALLBACK START");
 
-      if (error) {
-        console.error("Auth error:", error);
+      try {
+        const { data, error } =
+          await supabase.auth.exchangeCodeForSession(
+            window.location.href
+          );
+
+        console.log("SESSION:", data);
+        console.log("ERROR:", error);
+      } catch (err) {
+        console.error("CRASH:", err);
       }
 
-      window.location.href = "/app";
+      // 🔥 ALWAYS redirect after 1 sec (fail-safe)
+      setTimeout(() => {
+        window.location.href = "/app";
+      }, 1000);
     };
 
     run();
