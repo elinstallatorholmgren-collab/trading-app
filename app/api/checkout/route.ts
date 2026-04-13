@@ -5,16 +5,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST() {
   const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
     mode: "subscription",
+    payment_method_types: ["card"],
     line_items: [
       {
-        price: "price_1TLQ4hQhOE1WJo4XtSnUn2ef",
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Trading Discipline Pro",
+          },
+          unit_amount: 800, // $8
+          recurring: { interval: "month" },
+        },
         quantity: 1,
       },
     ],
-    success_url: `${process.env.NEXT_PUBLIC_URL}/app`,
-    cancel_url: `${process.env.NEXT_PUBLIC_URL}/app`,
+    success_url:
+      "https://trading-app-three-gamma.vercel.app/app?success=true",
+    cancel_url:
+      "https://trading-app-three-gamma.vercel.app/app",
   });
 
   return NextResponse.json({ url: session.url });

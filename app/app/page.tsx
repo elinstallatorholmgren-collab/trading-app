@@ -305,6 +305,34 @@ export default function Page() {
           {improving ? "Discipline improving" : "Discipline slipping"}
         </p>
 
+<button
+  onClick={async () => {
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+    });
+    const data = await res.json();
+    window.location.href = data.url;
+  }}
+  style={{
+    marginTop: 20,
+    padding: 16,
+    width: "100%",
+    background: "#00ffaa",
+    color: "#000",
+    borderRadius: 10,
+    border: "none",
+    fontWeight: "bold",
+    fontSize: 16,
+    cursor: "pointer"
+  }}
+>
+  Unlock your discipline
+</button>
+
+<p style={{ color: "#888", marginTop: 10 }}>
+  See your pattern. Fix it.
+</p>
+
         {/* PAYWALL */}
         {!isPro && (
           <div style={{ marginTop: 40, textAlign: "center" }}>
