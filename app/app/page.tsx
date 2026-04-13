@@ -194,9 +194,9 @@ useEffect(() => {
             style={styles.btnPrimary}
             onClick={async () => {
              await supabase.auth.signInWithOtp({
-  		email,
-  		options: {
-  	  emailRedirectTo: "http://localhost:3000/auth/callback",
+  	email,
+ 	 options: {
+   	 emailRedirectTo: "https://trading-app-three-	gamma.vercel.app/auth/callback",
  	 },
 	});
               alert("Check mail ✉️");
