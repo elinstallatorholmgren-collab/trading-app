@@ -322,7 +322,7 @@ export default function Page() {
   >
     {stats.discipline > 70 ? "On track" : "Slipping"}
   </p>
-</div>
+
 
         {!isPro ? (
           <button style={styles.btnPrimary}>
