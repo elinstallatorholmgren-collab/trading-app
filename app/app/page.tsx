@@ -235,7 +235,25 @@ export default function Page() {
       
 {/* 📈 GRAPH */}
 <div style={{ marginTop: 10 }}>
-  <svg width="100%" height="160">
+  <svg
+    width="100%"
+    height="160"
+    style={{
+      opacity: 1,
+      transition: "opacity 0.4s ease"
+    }}
+  >
+
+    {/* ✨ Glow */}
+    <defs>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+        <feMerge>
+          <feMergeNode in="coloredBlur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
 
     {(() => {
       const pnls = graphData.map((g) => g.pnl);
@@ -253,11 +271,11 @@ export default function Page() {
         const x1 = ((i - 1) / graphData.length) * 100;
         const x2 = (i / graphData.length) * 100;
 
-        // 🟢 PnL (bakgrund)
+        // 🟢 PnL (background)
         const y1 = 100 - ((prev.pnl - min) / range) * 100;
         const y2 = 100 - ((d.pnl - min) / range) * 100;
 
-        // 🔵 Discipline (main)
+        // 🔵 Discipline (amplified)
         const d1 = clamp(50 - (prev.discipline - 50) * amplify);
         const d2 = clamp(50 - (d.discipline - 50) * amplify);
 
@@ -269,9 +287,15 @@ export default function Page() {
               y1={`${y1}%`}
               x2={`${x2}%`}
               y2={`${y2}%`}
-              stroke="#00ffaa44"
+              stroke="#00ffaa33"
               strokeWidth="2"
               strokeLinecap="round"
+              style={{
+                strokeDasharray: 100,
+                strokeDashoffset: 100,
+                animation: `draw 0.6s ease forwards`,
+                animationDelay: `${i * 0.05}s`
+              }}
             />
 
             {/* Discipline */}
@@ -283,54 +307,72 @@ export default function Page() {
               stroke="#3b82f6"
               strokeWidth="3"
               strokeLinecap="round"
+              filter="url(#glow)"
+              style={{
+                strokeDasharray: 100,
+                strokeDashoffset: 100,
+                animation: `draw 0.6s ease forwards`,
+                animationDelay: `${i * 0.05}s`
+              }}
             />
           </g>
         );
       });
     })()}
 
-    {/* 🔵 LAST POINT */}
+    {/* 🔵 Last point */}
     {(() => {
       if (graphData.length === 0) return null;
 
-      const last = graphData[graphData.length - 1];
+      const lastIndex = graphData.length - 1;
+      const last = graphData[lastIndex];
+
       const amplify = 1.4;
       const clamp = (v: number) => Math.max(5, Math.min(95, v));
 
-      const lastIndex = graphData.length - 1;
-      const lastX = (lastIndex / graphData.length) * 100;
-
-      const lastY = clamp(50 - (last.discipline - 50) * amplify);
+      const x = (lastIndex / graphData.length) * 100;
+      const y = clamp(50 - (last.discipline - 50) * amplify);
 
       return (
         <circle
-          cx={`${lastX}%`}
-          cy={`${lastY}%`}
-          r="5"
-          fill="#3b82f6"
+          cx={`${x}%`}
+          cy={`${y}%`}
+          r="6"
+          stroke="#3b82f6"
+          strokeWidth="2"
+          fill="#020617"
+          style={{
+            animation: "fadeIn 0.5s ease forwards",
+            animationDelay: "0.4s"
+          }}
         />
       );
     })()}
 
+    {/* ✨ Animations */}
+    <style>
+      {`
+        @keyframes draw {
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}
+    </style>
+
   </svg>
 </div>
-
-{/* 📊 TREND */}
-{(() => {
-  if (graphData.length < 2) return null;
-
-  const last = graphData[graphData.length - 1];
-  const prev = graphData[graphData.length - 2];
-
-  const trendUp = last.discipline > prev.discipline;
-
-  return (
-    <p style={{ textAlign: "center", color: trendUp ? "#00ffaa" : "#ff4d4f" }}>
-      {trendUp ? "↗ Improving" : "↘ Slipping"}
-    </p>
-  );
-})()}
-
   {/* ✅ TEXT UTANFÖR SVG */}
   <p
     style={{
