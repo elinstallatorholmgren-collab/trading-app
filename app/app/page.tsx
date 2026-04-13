@@ -233,32 +233,40 @@ export default function Page() {
         </div>
 
         {/* 📈 GRAPH */}
-        <div style={{ marginTop: 30 }}>
-          <svg width="100%" height="200">
-            {graphData.map((d, i) => {
-              if (i === 0) return null;
-              const prev = graphData[i - 1];
+       <div style={{ marginTop: 30 }}>
+  <svg width="100%" height="200">
+    {(() => {
+      const pnls = graphData.map((g) => g.pnl);
+      const max = Math.max(...pnls, 1);
+      const min = Math.min(...pnls, 0);
+      const range = max - min || 1;
 
-              const x1 = ((i - 1) / graphData.length) * 100;
-              const x2 = (i / graphData.length) * 100;
+      return graphData.map((d, i) => {
+        if (i === 0) return null;
 
-              const y1 = 100 - prev.pnl;
-              const y2 = 100 - d.pnl;
+        const prev = graphData[i - 1];
 
-              return (
-                <line
-                  key={i}
-                  x1={`${x1}%`}
-                  y1={`${y1}%`}
-                  x2={`${x2}%`}
-                  y2={`${y2}%`}
-                  stroke="#00ffaa"
-                  strokeWidth="2"
-                />
-              );
-            })}
-          </svg>
-        </div>
+        const x1 = ((i - 1) / graphData.length) * 100;
+        const x2 = (i / graphData.length) * 100;
+
+        const y1 = 100 - ((prev.pnl - min) / range) * 100;
+        const y2 = 100 - ((d.pnl - min) / range) * 100;
+
+        return (
+          <line
+            key={i}
+            x1={`${x1}%`}
+            y1={`${y1}%`}
+            x2={`${x2}%`}
+            y2={`${y2}%`}
+            stroke="#00ffaa"
+            strokeWidth="2"
+          />
+        );
+      });
+    })()}
+  </svg>
+</div>
 
         {!isPro ? (
           <button style={styles.btnPrimary}>
