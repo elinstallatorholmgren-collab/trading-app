@@ -104,6 +104,7 @@ useEffect(() => {
     });
   }, [trades]);
 
+
   // NORMALIZE GRAPH
   const pnls = graphData.map((g) => g.pnl);
   const max = Math.max(...pnls, 1);
@@ -118,6 +119,7 @@ useEffect(() => {
 
   const improving =
     last && prev ? last.discipline > prev.discipline : true;
+
 
   // ADD TRADE
   const handleAddTrade = async () => {
@@ -142,82 +144,48 @@ useEffect(() => {
     );
   };
 
+
 // LOGIN
-if (!user) {
-  return (
-    <div style={styles.center}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Trading Discipline</h1>
+<button
+  disabled={loading}
+  style={{
+    ...styles.btnPrimary,
+    opacity: loading ? 0.6 : 1,
+  }}
+  onClick={async () => {
+    if (!email || loading) return;
 
-        <input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
-        />
+    setLoading(true);
 
-        <button
-          style={styles.btnPrimary}
-          onClick={async () => {
-            if (!email) {
-              alert("Enter email");
-              return;
-            }
+    console.log("LOGIN CLICK");
 
-            console.log("LOGIN CLICK");
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo:
+            window.location.origin + "/auth/callback",
+        },
+      });
 
-            try {
-              const { error } = await supabase.auth.signInWithOtp({
-                email,
-                options: {
-                  emailRedirectTo:
-                    window.location.origin + "/auth/callback",
-                },
-              });
+      if (error) {
+        console.error("LOGIN ERROR:", error);
+        alert(error.message);
+        setLoading(false);
+      } else {
+        alert("Magic link sent ✉️");
 
-              if (error) {
-                console.error("LOGIN ERROR:", error);
-                alert(error.message);
-              } else {
-                alert("Magic link sent ✉️");
-              }
-            } catch (err) {
-              console.error("LOGIN CRASH:", err);
-              alert("Something went wrong");
-            }
-          }}
-        >
-          Send Magic Link
-        </button>
-
-        <p style={styles.helper}>
-          We’ll send you a login link
-        </p>
-      </div>
-    </div>
-  );
-}
-
-  return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        <h1 style={styles.title}>Trading Discipline</h1>
-
-        {/* STATS */}
-        <div style={styles.grid}>
-          <div style={styles.cardSmall}>
-            <p>PnL</p>
-            <h2>${stats.pnl}</h2>
-          </div>
-
-          <div style={styles.cardSmall}>
-            <p>Discipline</p>
-            <h2>{stats.discipline}%</h2>
-          </div>
-        </div>
-
-        {/* CHECKLIST */}
+        // 🔥 viktigt: stoppa spam
+        setTimeout(() => setLoading(false), 10000);
+      }
+    } catch (err) {
+      console.error("LOGIN CRASH:", err);
+      setLoading(false);
+    }
+  }}
+>
+  {loading ? "Sending..." : "Send Magic Link"}
+</button>        {/* CHECKLIST */}
         <div style={styles.checklist}>
           {[
             { key: "level", label: "Level" },
