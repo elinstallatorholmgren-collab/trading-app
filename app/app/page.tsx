@@ -58,7 +58,7 @@ export default function Page() {
         if (data) setTrades(data);
       });
 
-    // TEMP PRO TEST (ta bort sen)
+    // TEMP
     setIsPro(true);
 
     const savedStreak = localStorage.getItem("streak");
@@ -87,6 +87,22 @@ export default function Page() {
     };
   }, [trades]);
 
+  // 📈 GRAPH DATA
+  const graphData = useMemo(() => {
+    let pnlRunning = 0;
+    let validCount = 0;
+
+    return trades.map((t, i) => {
+      pnlRunning += t.pnl;
+      if (t.valid) validCount++;
+
+      return {
+        pnl: pnlRunning,
+        discipline: Math.round((validCount / (i + 1)) * 100),
+      };
+    });
+  }, [trades]);
+
   // ADD TRADE
   const handleAddTrade = async () => {
     if (!pnl || !user) return;
@@ -104,11 +120,11 @@ export default function Page() {
     setTrades(newTrades);
     setPnl("");
 
-    if (isValid) {
-      setFeedback("✅ You followed your system");
-    } else {
-      setFeedback("❌ You broke your rules");
-    }
+    setFeedback(
+      isValid
+        ? "✅ You followed your system"
+        : "❌ You broke your rules"
+    );
   };
 
   // LOGIN
@@ -169,32 +185,33 @@ export default function Page() {
           </div>
         </div>
 
-{/* CHECKLIST */}
-<div style={styles.checklist}>
-  {([
-    { key: "level", label: "Level" },
-    { key: "confirmation", label: "Confirmation" },
-    { key: "rr", label: "RR" },
-  ] as { key: ChecklistKey; label: string }[]).map((item) => (
-    <div
-      key={item.key}
-      style={{
-        ...styles.checkItem,
-        border: checklist[item.key]
-          ? "1px solid #00ffaa"
-          : "1px solid #333",
-      }}
-      onClick={() =>
-        setChecklist({
-          ...checklist,
-          [item.key]: !checklist[item.key],
-        })
-      }
-    >
-      {item.label}
-    </div>
-  ))}
-</div>
+        {/* CHECKLIST */}
+        <div style={styles.checklist}>
+          {([
+            { key: "level", label: "Level" },
+            { key: "confirmation", label: "Confirmation" },
+            { key: "rr", label: "RR" },
+          ] as { key: ChecklistKey; label: string }[]).map((item) => (
+            <div
+              key={item.key}
+              style={{
+                ...styles.checkItem,
+                border: checklist[item.key]
+                  ? "1px solid #00ffaa"
+                  : "1px solid #333",
+              }}
+              onClick={() =>
+                setChecklist({
+                  ...checklist,
+                  [item.key]: !checklist[item.key],
+                })
+              }
+            >
+              {item.label}
+            </div>
+          ))}
+        </div>
+
         {/* INPUT */}
         <div style={styles.inputRow}>
           <input
@@ -213,6 +230,34 @@ export default function Page() {
           >
             {isValid ? "Log" : "Break"}
           </button>
+        </div>
+
+        {/* 📈 GRAPH */}
+        <div style={{ marginTop: 30 }}>
+          <svg width="100%" height="200">
+            {graphData.map((d, i) => {
+              if (i === 0) return null;
+              const prev = graphData[i - 1];
+
+              const x1 = ((i - 1) / graphData.length) * 100;
+              const x2 = (i / graphData.length) * 100;
+
+              const y1 = 100 - prev.pnl;
+              const y2 = 100 - d.pnl;
+
+              return (
+                <line
+                  key={i}
+                  x1={`${x1}%`}
+                  y1={`${y1}%`}
+                  x2={`${x2}%`}
+                  y2={`${y2}%`}
+                  stroke="#00ffaa"
+                  strokeWidth="2"
+                />
+              );
+            })}
+          </svg>
         </div>
 
         {!isPro ? (
