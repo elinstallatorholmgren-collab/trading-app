@@ -8,12 +8,10 @@ type ChecklistKey = "level" | "confirmation" | "rr";
 export default function Page() {
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
-
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro] = useState(true); // TEMP
 
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
-
   const [feedback, setFeedback] = useState("");
 
   const [checklist, setChecklist] = useState<Record<ChecklistKey, boolean>>({
@@ -54,9 +52,6 @@ export default function Page() {
       .then(({ data }) => {
         if (data) setTrades(data);
       });
-
-    // TEMP PRO (ta bort senare)
-    setIsPro(true);
   }, [user]);
 
   // STATS
@@ -97,6 +92,12 @@ export default function Page() {
   const clamp = (v: number) => Math.max(5, Math.min(95, v));
   const amplify = 1.4;
 
+  const last = graphData.length > 0 ? graphData[graphData.length - 1] : null;
+  const prev = graphData.length > 1 ? graphData[graphData.length - 2] : null;
+
+  const improving =
+    last && prev ? last.discipline > prev.discipline : true;
+
   // ADD TRADE
   const handleAddTrade = async () => {
     if (!pnl || !user) return;
@@ -110,8 +111,7 @@ export default function Page() {
       { ...newTrade, user_id: user.id },
     ]);
 
-    const newTrades = [...trades, newTrade];
-    setTrades(newTrades);
+    setTrades([...trades, newTrade]);
     setPnl("");
 
     setFeedback(
@@ -157,10 +157,6 @@ export default function Page() {
     );
   }
 
-  const last = graphData[graphData.length - 1];
-  const prev = graphData[graphData.length - 2];
-  const improving = last?.discipline > prev?.discipline;
-
   return (
     <div style={styles.page}>
       <div style={styles.container}>
@@ -181,29 +177,27 @@ export default function Page() {
 
         {/* CHECKLIST */}
         <div style={styles.checklist}>
-          {([
-            { key: "level", label: "Level" },
-            { key: "confirmation", label: "Confirmation" },
-            { key: "rr", label: "RR" },
-          ] as { key: ChecklistKey; label: string }[]).map((item) => (
-            <div
-              key={item.key}
-              style={{
-                ...styles.checkItem,
-                border: checklist[item.key]
-                  ? "1px solid #00ffaa"
-                  : "1px solid #333",
-              }}
-              onClick={() =>
-                setChecklist({
-                  ...checklist,
-                  [item.key]: !checklist[item.key],
-                })
-              }
-            >
-              {item.label}
-            </div>
-          ))}
+          {(["level", "confirmation", "rr"] as ChecklistKey[]).map(
+            (key) => (
+              <div
+                key={key}
+                style={{
+                  ...styles.checkItem,
+                  border: checklist[key]
+                    ? "1px solid #00ffaa"
+                    : "1px solid #333",
+                }}
+                onClick={() =>
+                  setChecklist({
+                    ...checklist,
+                    [key]: !checklist[key],
+                  })
+                }
+              >
+                {key}
+              </div>
+            )
+          )}
         </div>
 
         {/* INPUT */}
@@ -227,71 +221,44 @@ export default function Page() {
         </div>
 
         {/* GRAPH */}
-        <div
-          style={{
-            marginTop: 20,
-            filter: !isPro ? "blur(6px)" : "none",
-            opacity: !isPro ? 0.6 : 1,
-          }}
-        >
+        <div style={{ marginTop: 20 }}>
           <svg width="100%" height="160">
-            {(() => {
-              const pnls = graphData.map((g) => g.pnl);
-              const max = Math.max(...pnls, 1);
-              const min = Math.min(...pnls, 0);
-              const range = max - min || 1;
+            {graphData.map((d, i) => {
+              if (i === 0) return null;
 
-              return graphData.map((d, i) => {
-                if (i === 0) return null;
-                const prev = graphData[i - 1];
+              const prev = graphData[i - 1];
 
-                const x1 = ((i - 1) / graphData.length) * 100;
-                const x2 = (i / graphData.length) * 100;
+              const x1 = ((i - 1) / graphData.length) * 100;
+              const x2 = (i / graphData.length) * 100;
 
-                const y1 = 100 - ((prev.pnl - min) / range) * 100;
-                const y2 = 100 - ((d.pnl - min) / range) * 100;
+              const y1 = 100 - prev.pnl;
+              const y2 = 100 - d.pnl;
 
-                const d1 = clamp(50 - (prev.discipline - 50) * amplify);
-                const d2 = clamp(50 - (d.discipline - 50) * amplify);
+              const d1 = clamp(50 - (prev.discipline - 50) * amplify);
+              const d2 = clamp(50 - (d.discipline - 50) * amplify);
 
-                return (
-                  <g key={i}>
-                    {/* PnL */}
-                    <line
-                      x1={`${x1}%`}
-                      y1={`${y1}%`}
-                      x2={`${x2}%`}
-                      y2={`${y2}%`}
-                      stroke="#00ffaa44"
-                      strokeWidth="2"
-                    />
+              return (
+                <g key={i}>
+                  <line
+                    x1={`${x1}%`}
+                    y1={`${y1}%`}
+                    x2={`${x2}%`}
+                    y2={`${y2}%`}
+                    stroke="#00ffaa33"
+                    strokeWidth="2"
+                  />
 
-                    {/* Discipline */}
-                    <line
-                      x1={`${x1}%`}
-                      y1={`${d1}%`}
-                      x2={`${x2}%`}
-                      y2={`${d2}%`}
-                      stroke="#3b82f6"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                  </g>
-                );
-              });
-            })()}
-
-            {/* LAST POINT */}
-            {last && (
-              <circle
-                cx={`${((graphData.length - 1) / graphData.length) * 100}%`}
-                cy={`${clamp(50 - (last.discipline - 50) * amplify)}%`}
-                r="6"
-                stroke="#3b82f6"
-                strokeWidth="2"
-                fill="#020617"
-              />
-            )}
+                  <line
+                    x1={`${x1}%`}
+                    y1={`${d1}%`}
+                    x2={`${x2}%`}
+                    y2={`${d2}%`}
+                    stroke="#3b82f6"
+                    strokeWidth="3"
+                  />
+                </g>
+              );
+            })}
           </svg>
         </div>
 
@@ -302,58 +269,41 @@ export default function Page() {
             color: improving ? "#00ffaa" : "#ff4d4f",
           }}
         >
-          {improving ? "Discipline improving" : "Discipline slipping"}
+          {improving ? "Improving" : "Slipping"}
         </p>
 
-<button
-  onClick={async () => {
-    console.log("CLICK");
+        {/* CHECKOUT BUTTON */}
+        <button
+          onClick={async () => {
+            console.log("CLICK");
 
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-    });
+            const res = await fetch("/api/checkout", {
+              method: "POST",
+            });
 
-    const data = await res.json();
-    console.log("DATA:", data);
+            const data = await res.json();
+            console.log(data);
 
-    window.location.href = data.url;
-  }}
-  style={{
-    marginTop: 20,
-    padding: 16,
-    width: "100%",
-    background: "#00ffaa",
-    color: "#000",
-    borderRadius: 10,
-    border: "none",
-    fontWeight: "bold",
-    fontSize: 16,
-    cursor: "pointer",
-  }}
->
-  Unlock your discipline
-</button>
-
-<p style={{ color: "#888", marginTop: 10 }}>
-  See your pattern. Fix it.
-</p>
-
-        {/* PAYWALL */}
-        {!isPro && (
-          <div style={{ marginTop: 40, textAlign: "center" }}>
-            <p style={{ fontSize: 18, marginBottom: 10 }}>
-              See your discipline pattern
-            </p>
-
-            <p style={{ color: "#888", marginBottom: 25 }}>
-              Most traders fail because they break their rules.
-            </p>
-
-            <button style={styles.btnPrimary}>
-              Unlock your edge
-            </button>
-          </div>
-        )}
+            if (data?.url) {
+              window.location.href = data.url;
+            } else {
+              alert("Checkout failed");
+            }
+          }}
+          style={{
+            marginTop: 20,
+            padding: 16,
+            width: "100%",
+            background: "#00ffaa",
+            color: "#000",
+            borderRadius: 10,
+            border: "none",
+            fontWeight: "bold",
+            cursor: "pointer",
+          }}
+        >
+          Unlock your discipline
+        </button>
 
         <button
           onClick={() => supabase.auth.signOut()}
@@ -404,9 +354,6 @@ const styles: any = {
     borderRadius: 8,
     border: "none",
     cursor: "pointer",
-    background: "#00ffaa",
-    color: "#000",
-    fontWeight: "600",
   },
   logout: { marginTop: 30, color: "#888" },
 };
