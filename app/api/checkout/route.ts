@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-});
 
 export async function POST() {
   try {
@@ -17,7 +16,7 @@ export async function POST() {
             product_data: {
               name: "Trading Discipline Pro",
             },
-            unit_amount: 800, // $8
+            unit_amount: 800,
             recurring: {
               interval: "month",
             },
@@ -33,7 +32,7 @@ export async function POST() {
     return NextResponse.json({ url: session.url });
 
   } catch (err) {
-    console.error(err);
+    console.error("STRIPE ERROR:", err);
     return NextResponse.json({ error: "Stripe error" }, { status: 500 });
   }
 }
