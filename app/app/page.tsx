@@ -146,46 +146,66 @@ useEffect(() => {
 
 
 // LOGIN
-<button
-  disabled={loading}
-  style={{
-    ...styles.btnPrimary,
-    opacity: loading ? 0.6 : 1,
-  }}
-  onClick={async () => {
-    if (!email || loading) return;
+if (!user) {
+  return (
+    <div style={styles.center}>
+      <div style={styles.card}>
+        <h1 style={styles.title}>Trading Discipline</h1>
 
-    setLoading(true);
+        <input
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
 
-    console.log("LOGIN CLICK");
+        <button
+          disabled={loading}
+          style={{
+            ...styles.btnPrimary,
+            opacity: loading ? 0.6 : 1,
+          }}
+          onClick={async () => {
+            if (!email || loading) return;
 
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo:
-            window.location.origin + "/auth/callback",
-        },
-      });
+            setLoading(true);
 
-      if (error) {
-        console.error("LOGIN ERROR:", error);
-        alert(error.message);
-        setLoading(false);
-      } else {
-        alert("Magic link sent ✉️");
+            console.log("LOGIN CLICK");
 
-        // 🔥 viktigt: stoppa spam
-        setTimeout(() => setLoading(false), 10000);
-      }
-    } catch (err) {
-      console.error("LOGIN CRASH:", err);
-      setLoading(false);
-    }
-  }}
->
-  {loading ? "Sending..." : "Send Magic Link"}
-</button>       
+            try {
+              const { error } = await supabase.auth.signInWithOtp({
+                email,
+                options: {
+                  emailRedirectTo:
+                    window.location.origin + "/auth/callback",
+                },
+              });
+
+              if (error) {
+                console.error("LOGIN ERROR:", error);
+                alert(error.message);
+                setLoading(false);
+              } else {
+                alert("Magic link sent ✉️");
+                setTimeout(() => setLoading(false), 10000);
+              }
+            } catch (err) {
+              console.error("LOGIN CRASH:", err);
+              setLoading(false);
+            }
+          }}
+        >
+          {loading ? "Sending..." : "Send Magic Link"}
+        </button>
+
+        <p style={styles.helper}>
+          We’ll send you a login link
+        </p>
+      </div>
+    </div>
+  );
+}  
  
 
 	{/* CHECKLIST */}
