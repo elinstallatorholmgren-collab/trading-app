@@ -32,13 +32,13 @@ export default function Page() {
   // AUTH
 useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
-	console.log("USER:", data.session?.user);
+    console.log("USER:", data.session?.user); // ✅ rätt här
     setUser(data.session?.user || null);
   });
 
   const { data: listener } = supabase.auth.onAuthStateChange(
     (_event, session) => {
-	console.log("USER:", data.session?.user);
+      console.log("USER:", session?.user); // ✅ FIX HÄR
       setUser(session?.user || null);
     }
   );
@@ -47,7 +47,6 @@ useEffect(() => {
     listener.subscription.unsubscribe();
   };
 }, []);
-
   // LOAD
   useEffect(() => {
     if (!user) return;
