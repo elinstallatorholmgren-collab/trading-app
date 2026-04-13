@@ -171,30 +171,29 @@ export default function Page() {
 
         {/* CHECKLIST */}
         <div style={styles.checklist}>
-          {[
-            { key: "level", label: "Level" },
-            { key: "confirmation", label: "Confirmation" },
-            { key: "rr", label: "RR" },
-          ].map((item: any) => (
-            <div
-              key={item.key}
-              style={{
-                ...styles.checkItem,
-                border: checklist[item.key]
-                  ? "1px solid #00ffaa"
-                  : "1px solid #333",
-              }}
-              onClick={() =>
-                setChecklist({
-                  ...checklist,
-                  [item.key]: !checklist[item.key],
-                })
-              }
-            >
-              {item.label}
-            </div>
-          ))}
-        </div>
+   {[
+  { key: "level", label: "Level" },
+  { key: "confirmation", label: "Confirmation" },
+  { key: "rr", label: "RR" },
+].map((item: { key: ChecklistKey; label: string }) => (
+  <div
+    key={item.key}
+    style={{
+      ...styles.checkItem,
+      border: checklist[item.key]
+        ? "1px solid #00ffaa"
+        : "1px solid #333",
+    }}
+    onClick={() =>
+      setChecklist({
+        ...checklist,
+        [item.key]: !checklist[item.key],
+      })
+    }
+  >
+    {item.label}
+  </div>
+))}
 
         {/* INPUT */}
         <div style={styles.inputRow}>
