@@ -8,14 +8,12 @@ type ChecklistKey = "level" | "confirmation" | "rr";
 export default function Page() {
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
-
   const [isPro, setIsPro] = useState(false);
 
   const [trades, setTrades] = useState<any[]>([]);
   const [pnl, setPnl] = useState("");
 
   const [feedback, setFeedback] = useState("");
-
   const [streak, setStreak] = useState(0);
   const [lastDate, setLastDate] = useState("");
 
@@ -28,7 +26,7 @@ export default function Page() {
   const isValid =
     checklist.level && checklist.confirmation && checklist.rr;
 
-  // AUTH
+  // 🔐 AUTH
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user || null);
@@ -45,10 +43,21 @@ export default function Page() {
     };
   }, []);
 
-  // LOAD DATA
+  // 👤 CREATE PROFILE
   useEffect(() => {
     if (!user) return;
 
+    supabase.from("profiles").upsert({
+      id: user.id,
+      email: user.email,
+    });
+  }, [user]);
+
+  // 🔥 LOAD ALL DATA
+  useEffect(() => {
+    if (!user) return;
+
+    // trades
     supabase
       .from("trades")
       .select("*")
@@ -58,17 +67,26 @@ export default function Page() {
         if (data) setTrades(data);
       });
 
-    // TEMP
-    setIsPro(true);
+    // pro status
+    supabase
+      .from("profiles")
+      .select("is_pro")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) setIsPro(data.is_pro);
+      });
 
+    // streak
     const savedStreak = localStorage.getItem("streak");
     const savedDate = localStorage.getItem("lastDate");
 
     if (savedStreak) setStreak(Number(savedStreak));
     if (savedDate) setLastDate(savedDate);
+
   }, [user]);
 
-  // STATS
+  // 📊 STATS
   const stats = useMemo(() => {
     let total = 0;
     let valid = 0;
@@ -103,7 +121,7 @@ export default function Page() {
     });
   }, [trades]);
 
-  // ADD TRADE
+  // ➕ ADD TRADE
   const handleAddTrade = async () => {
     if (!pnl || !user) return;
 
@@ -116,8 +134,7 @@ export default function Page() {
       { ...newTrade, user_id: user.id },
     ]);
 
-    const newTrades = [...trades, newTrade];
-    setTrades(newTrades);
+    setTrades([...trades, newTrade]);
     setPnl("");
 
     setFeedback(
@@ -127,7 +144,7 @@ export default function Page() {
     );
   };
 
-  // LOGIN
+  // 🔐 LOGIN
   if (!user) {
     return (
       <div style={styles.center}>
@@ -152,11 +169,8 @@ export default function Page() {
                 },
               });
 
-              if (error) {
-                alert(error.message);
-              } else {
-                alert("Check mail ✉️");
-              }
+              if (error) alert(error.message);
+              else alert("Check mail ✉️");
             }}
           >
             Send Magic Link
@@ -173,6 +187,7 @@ export default function Page() {
 
         <p style={{ textAlign: "center" }}>🔥 {streak} days</p>
 
+        {/* STATS */}
         <div style={styles.grid}>
           <div style={styles.cardSmall}>
             <p>PnL</p>
@@ -232,167 +247,66 @@ export default function Page() {
           </button>
         </div>
 
-      
-{/* 📈 GRAPH */}
-<div style={{ marginTop: 10 }}>
-  <svg
-    width="100%"
-    height="160"
-    style={{
-      opacity: 1,
-      transition: "opacity 0.4s ease"
-    }}
-  >
+        {/* 🔒 GRAPH */}
+        <div style={{ marginTop: 20, position: "relative" }}>
+          {!isPro && (
+            <div style={styles.overlay}>
+              <p style={{ marginBottom: 10, fontWeight: "bold" }}>
+                See your discipline pattern
+              </p>
 
-    {/* ✨ Glow */}
-    <defs>
-      <filter id="glow">
-        <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
-        <feMerge>
-          <feMergeNode in="coloredBlur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-    </defs>
+              <button
+                style={styles.btnPrimary}
+                onClick={async () => {
+                  const res = await fetch("/api/checkout", {
+                    method: "POST",
+                  });
+                  const data = await res.json();
+                  window.location.href = data.url;
+                }}
+              >
+                Unlock 🚀
+              </button>
+            </div>
+          )}
 
-    {(() => {
-      const pnls = graphData.map((g) => g.pnl);
-      const max = Math.max(...pnls, 1);
-      const min = Math.min(...pnls, 0);
-      const range = max - min || 1;
+          <svg width="100%" height="140">
+            {graphData.map((d, i) => {
+              if (i === 0) return null;
+              const prev = graphData[i - 1];
 
-      const amplify = 1.4;
-      const clamp = (v: number) => Math.max(5, Math.min(95, v));
+              const x1 = ((i - 1) / graphData.length) * 100;
+              const x2 = (i / graphData.length) * 100;
 
-      return graphData.map((d, i) => {
-        if (i === 0) return null;
-        const prev = graphData[i - 1];
+              return (
+                <line
+                  key={i}
+                  x1={`${x1}%`}
+                  y1={`${100 - prev.discipline}%`}
+                  x2={`${x2}%`}
+                  y2={`${100 - d.discipline}%`}
+                  stroke="#3b82f6"
+                  strokeWidth="2"
+                />
+              );
+            })}
+          </svg>
+        </div>
 
-        const x1 = ((i - 1) / graphData.length) * 100;
-        const x2 = (i / graphData.length) * 100;
+        {/* STATUS */}
+        <p style={{ textAlign: "center", marginTop: 10 }}>
+          {stats.discipline > 70 ? "On track" : "Slipping"}
+        </p>
 
-        // 🟢 PnL (background)
-        const y1 = 100 - ((prev.pnl - min) / range) * 100;
-        const y2 = 100 - ((d.pnl - min) / range) * 100;
-
-        // 🔵 Discipline (amplified)
-        const d1 = clamp(50 - (prev.discipline - 50) * amplify);
-        const d2 = clamp(50 - (d.discipline - 50) * amplify);
-
-        return (
-          <g key={i}>
-            {/* PnL */}
-            <line
-              x1={`${x1}%`}
-              y1={`${y1}%`}
-              x2={`${x2}%`}
-              y2={`${y2}%`}
-              stroke="#00ffaa33"
-              strokeWidth="2"
-              strokeLinecap="round"
-              style={{
-                strokeDasharray: 100,
-                strokeDashoffset: 100,
-                animation: `draw 0.6s ease forwards`,
-                animationDelay: `${i * 0.05}s`
-              }}
-            />
-
-            {/* Discipline */}
-            <line
-              x1={`${x1}%`}
-              y1={`${d1}%`}
-              x2={`${x2}%`}
-              y2={`${d2}%`}
-              stroke="#3b82f6"
-              strokeWidth="3"
-              strokeLinecap="round"
-              filter="url(#glow)"
-              style={{
-                strokeDasharray: 100,
-                strokeDashoffset: 100,
-                animation: `draw 0.6s ease forwards`,
-                animationDelay: `${i * 0.05}s`
-              }}
-            />
-          </g>
-        );
-      });
-    })()}
-
-    {/* 🔵 Last point */}
-    {(() => {
-      if (graphData.length === 0) return null;
-
-      const lastIndex = graphData.length - 1;
-      const last = graphData[lastIndex];
-
-      const amplify = 1.4;
-      const clamp = (v: number) => Math.max(5, Math.min(95, v));
-
-      const x = (lastIndex / graphData.length) * 100;
-      const y = clamp(50 - (last.discipline - 50) * amplify);
-
-      return (
-        <circle
-          cx={`${x}%`}
-          cy={`${y}%`}
-          r="6"
-          stroke="#3b82f6"
-          strokeWidth="2"
-          fill="#020617"
-          style={{
-            animation: "fadeIn 0.5s ease forwards",
-            animationDelay: "0.4s"
-          }}
-        />
-      );
-    })()}
-
-    {/* ✨ Animations */}
-    <style>
-      {`
-        @keyframes draw {
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.8);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-      `}
-    </style>
-
-  </svg>
-</div>
-  {/* ✅ TEXT UTANFÖR SVG */}
-  <p
-    style={{
-      textAlign: "center",
-      marginTop: 10,
-      color: stats.discipline > 70 ? "#00ffaa" : "#ff4d4f",
-    }}
-  >
-    {stats.discipline > 70 ? "On track" : "Slipping"}
-  </p>
-
-
-        {!isPro ? (
+        {/* PRO STATUS */}
+        {isPro ? (
+          <p style={{ color: "#00ffaa", textAlign: "center" }}>
+            ✅ You are Pro
+          </p>
+        ) : (
           <button style={styles.btnPrimary}>
             Upgrade to Pro 🚀
           </button>
-        ) : (
-          <div style={{ color: "#00ffaa", textAlign: "center" }}>
-            ✅ You are Pro
-          </div>
         )}
 
         <button
@@ -409,41 +323,26 @@ export default function Page() {
 const styles: any = {
   page: { background: "#020617", minHeight: "100vh", padding: 20 },
   container: { maxWidth: 500, margin: "0 auto", color: "#fff" },
-  center: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
-    background: "#020617",
-  },
-  title: {
-    textAlign: "center",
-    fontSize: 32,
-    color: "#00ffaa",
-    marginBottom: 20,
-  },
+  center: { display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#020617" },
+  title: { textAlign: "center", fontSize: 32, color: "#00ffaa", marginBottom: 20 },
   grid: { display: "flex", gap: 12, marginBottom: 15 },
-  cardSmall: {
-    flex: 1,
-    background: "#111827",
-    padding: 15,
-    borderRadius: 10,
-  },
+  cardSmall: { flex: 1, background: "#111827", padding: 15, borderRadius: 10 },
   checklist: { display: "flex", gap: 10, marginBottom: 15 },
-  checkItem: {
-    flex: 1,
-    padding: 10,
-    textAlign: "center",
-    borderRadius: 8,
-    cursor: "pointer",
-  },
+  checkItem: { flex: 1, padding: 10, textAlign: "center", borderRadius: 8, cursor: "pointer" },
   inputRow: { display: "flex", gap: 10 },
   input: { flex: 1, padding: 10, borderRadius: 8, border: "none" },
-  btnPrimary: {
-    padding: 10,
-    borderRadius: 8,
-    border: "none",
-    cursor: "pointer",
+  btnPrimary: { padding: 10, borderRadius: 8, border: "none", cursor: "pointer" },
+  overlay: {
+    position: "absolute",
+    inset: 0,
+    backdropFilter: "blur(6px)",
+    background: "rgba(2,6,23,0.6)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
+    zIndex: 10,
   },
   logout: { marginTop: 20, color: "#888" },
 };
