@@ -171,11 +171,11 @@ export default function Page() {
 
 {/* CHECKLIST */}
 <div style={styles.checklist}>
-  {[
+  {([
     { key: "level", label: "Level" },
     { key: "confirmation", label: "Confirmation" },
     { key: "rr", label: "RR" },
-  ].map((item: { key: ChecklistKey; label: string }) => (
+  ] as { key: ChecklistKey; label: string }[]).map((item) => (
     <div
       key={item.key}
       style={{
@@ -194,8 +194,7 @@ export default function Page() {
       {item.label}
     </div>
   ))}
-</div> {/* 👈 DENNA SAKNADES */}
-
+</div>
         {/* INPUT */}
         <div style={styles.inputRow}>
           <input
