@@ -1,42 +1,30 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error("Missing STRIPE_SECRET_KEY");
-}
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST() {
-  try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      mode: "subscription",
-
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Trading Discipline Pro",
-            },
-            unit_amount: 800,
-            recurring: {
-              interval: "month",
-            },
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    mode: "subscription",
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Trading Discipline Pro",
           },
-          quantity: 1,
+          unit_amount: 800,
+          recurring: {
+            interval: "month",
+          },
         },
-      ],
+        quantity: 1,
+      },
+    ],
+    success_url: "http://localhost:3000/app",
+    cancel_url: "http://localhost:3000/app",
+  });
 
-      success_url: "https://trading-app-three-gamma.vercel.app/app",
-      cancel_url: "https://trading-app-three-gamma.vercel.app/app",
-    });
-
-    return NextResponse.json({ url: session.url });
-
-  } catch (err) {
-    console.error("STRIPE ERROR:", err);
-    return NextResponse.json({ error: "Stripe error" }, { status: 500 });
-  }
+  return NextResponse.json({ url: session.url });
 }
