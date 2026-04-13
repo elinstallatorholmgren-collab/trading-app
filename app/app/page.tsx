@@ -47,6 +47,7 @@ useEffect(() => {
     listener.subscription.unsubscribe();
   };
 }, []);
+
   // LOAD
   useEffect(() => {
     if (!user) return;
@@ -193,21 +194,21 @@ useEffect(() => {
           />
           <button
             style={styles.btnPrimary}
-            onClick={async () => {
-await supabase.auth.signInWithOtp({
-  email,
-  options: {
-    emailRedirectTo: "https://trading-app-three-gamma.vercel.app/auth/callback",
-  },
-});        alert("Check mail ✉️");
-            }}
-          >
-            Send Magic Link
-          </button>
-        </div>
-      </div>
-    );
+           onClick={async () => {
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: "https://trading-app-three-gamma.vercel.app/auth/callback",
+    },
+  });
+
+  if (error) {
+    console.error("LOGIN ERROR:", error);
+    alert("Something went wrong: " + error.message);
+  } else {
+    alert("Check mail ✉️");
   }
+}}
 
   return (
     <div style={styles.page}>
