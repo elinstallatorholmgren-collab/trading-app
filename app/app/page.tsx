@@ -127,49 +127,62 @@ export default function Page() {
     );
   };
 
-  // LOGIN
-  if (!user) {
-    return (
-      <div style={styles.center}>
-        <div style={styles.card}>
-          <h1 style={styles.title}>Trading Discipline</h1>
+// LOGIN
+if (!user) {
+  return (
+    <div style={styles.center}>
+      <div style={styles.card}>
+        <h1 style={styles.title}>Trading Discipline</h1>
 
-          <div style={styles.form}>
-            <input
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-            />
+        <input
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
 
-            <button
-              style={styles.btnPrimary}
-              onClick={async () => {
-                if (!email) return alert("Enter email");
+        <button
+          style={styles.btnPrimary}
+          onClick={async () => {
+            if (!email) {
+              alert("Enter email");
+              return;
+            }
 
-                const { error } = await supabase.auth.signInWithOtp({
-                  email,
-                  options: {
-                    emailRedirectTo:
-                      "https://trading-app-three-gamma.vercel.app/auth/callback",
-                  },
-                });
+            console.log("LOGIN CLICK");
 
-                if (error) alert(error.message);
-                else alert("Magic link sent ✉️");
-              }}
-            >
-              Send Magic Link
-            </button>
-          </div>
+            try {
+              const { error } = await supabase.auth.signInWithOtp({
+                email,
+                options: {
+                  emailRedirectTo:
+                    window.location.origin + "/auth/callback",
+                },
+              });
 
-          <p style={styles.helper}>
-            We’ll send you a login link
-          </p>
-        </div>
+              if (error) {
+                console.error("LOGIN ERROR:", error);
+                alert(error.message);
+              } else {
+                alert("Magic link sent ✉️");
+              }
+            } catch (err) {
+              console.error("LOGIN CRASH:", err);
+              alert("Something went wrong");
+            }
+          }}
+        >
+          Send Magic Link
+        </button>
+
+        <p style={styles.helper}>
+          We’ll send you a login link
+        </p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div style={styles.page}>
@@ -330,8 +343,17 @@ export default function Page() {
 }
 
 const styles: any = {
-  page: { background: "#020617", minHeight: "100vh", padding: 20 },
-  container: { maxWidth: 500, margin: "0 auto", color: "#fff" },
+  page: {
+    background: "#020617",
+    minHeight: "100vh",
+    padding: 20,
+  },
+
+  container: {
+    maxWidth: 500,
+    margin: "0 auto",
+    color: "#fff",
+  },
 
   center: {
     display: "flex",
@@ -343,69 +365,50 @@ const styles: any = {
 
   card: {
     background: "#0f172a",
-    padding: 24,
-    borderRadius: 14,
-    width: "100%",
-    maxWidth: 380,
-  },
-
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-  },
-
-  helper: {
-    marginTop: 12,
-    color: "#888",
+    padding: 30,
+    borderRadius: 16,
+    width: 320,
     textAlign: "center",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
   },
 
   title: {
-    textAlign: "center",
-    fontSize: 32,
+    fontSize: 28,
     color: "#00ffaa",
     marginBottom: 20,
   },
 
-  grid: { display: "flex", gap: 12, marginBottom: 15 },
-
-  cardSmall: {
-    flex: 1,
-    background: "#111827",
-    padding: 15,
-    borderRadius: 10,
-  },
-
-  checklist: { display: "flex", gap: 10, marginBottom: 15 },
-
-  checkItem: {
-    flex: 1,
-    padding: 10,
-    textAlign: "center",
-    borderRadius: 8,
-    cursor: "pointer",
-  },
-
-  inputRow: { display: "flex", gap: 10 },
-
   input: {
-    flex: 1,
-    padding: 10,
+    width: "100%",
+    padding: 12,
     borderRadius: 8,
-    border: "none",
+    border: "1px solid #1f2937",
+    background: "#020617",
+    color: "#fff",
+    outline: "none",
+    fontSize: 14,
+    marginBottom: 15,
+  },
+
+  helper: {
+    marginTop: 10,
+    color: "#6b7280",
+    fontSize: 13,
   },
 
   btnPrimary: {
-    marginTop: 10,
+    width: "100%",
     padding: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     border: "none",
-    cursor: "pointer",
     background: "#00ffaa",
     color: "#000",
     fontWeight: "bold",
+    cursor: "pointer",
   },
 
-  logout: { marginTop: 30, color: "#888" },
+  logout: {
+    marginTop: 30,
+    color: "#888",
+  },
 };
