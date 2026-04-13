@@ -233,8 +233,8 @@ export default function Page() {
         </div>
 
         {/* 📈 GRAPH */}
-    <div style={{ marginTop: 30 }}>
-  <svg width="100%" height="200">
+    <div style={{ marginTop: 20 }}>
+  <svg width="100%" height="160">
 
     <defs>
       <filter id="glow">
@@ -269,6 +269,16 @@ export default function Page() {
         // 🔵 Discipline (amplified + clamped)
         const d1 = clamp(50 - (prev.discipline - 50) * amplify);
         const d2 = clamp(50 - (d.discipline - 50) * amplify);
+	const last = graphData[graphData.length - 1];
+	<circle
+ 	 cx="100%"
+	 cy={`${clamp(50 - (last.discipline - 50) * amplify)}%`}
+ 	 r="5"
+ 	 fill="#3b82f6"
+	/>
+	<p style={{ color: stats.discipline > 70 ? "#00ffaa" : "#ff4d4f" }}>
+ 	 {stats.discipline > 70 ? "On track" : "Slipping"}
+	</p>
 
         return (
           <g key={i}>
