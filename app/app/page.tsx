@@ -41,18 +41,33 @@ export default function Page() {
   }, []);
 
   // LOAD
-  useEffect(() => {
-    if (!user) return;
+useEffect(() => {
+  if (!user) return;
 
-    supabase
+  const load = async () => {
+    // trades
+    const { data: tradesData } = await supabase
       .from("trades")
       .select("*")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
-      .then(({ data }) => {
-        if (data) setTrades(data);
-      });
-  }, [user]);
+      .order("created_at", { ascending: true });
+
+    if (tradesData) setTrades(tradesData);
+
+    // profile (PRO STATUS 🔥)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_pro")
+      .eq("id", user.id)
+      .single();
+
+    if (profile) {
+      setIsPro(profile.is_pro);
+    }
+  };
+
+  load();
+}, [user]);
 
   // STATS
   const stats = useMemo(() => {
