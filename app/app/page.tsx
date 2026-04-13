@@ -32,11 +32,13 @@ export default function Page() {
   // AUTH
 useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
+	console.log("USER:", data.session?.user);
     setUser(data.session?.user || null);
   });
 
   const { data: listener } = supabase.auth.onAuthStateChange(
     (_event, session) => {
+	console.log("USER:", data.session?.user);
       setUser(session?.user || null);
     }
   );
