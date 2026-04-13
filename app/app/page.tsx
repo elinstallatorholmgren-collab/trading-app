@@ -8,7 +8,7 @@ import { supabase } from "../../lib/supabase";
 type ChecklistKey = "level" | "confirmation" | "rr";
 
 export default function Page() {
-  const [isPro, setIsPro] = useState(true);
+  const [isPro, setIsPro] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
 
