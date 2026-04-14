@@ -100,6 +100,22 @@ const graphData = useMemo(() => {
   });
 }, [trades]);
 
+const today = new Date().toISOString().slice(0, 10);
+
+const todayTrades = trades.filter((t) =>
+  (t.created_at || "").startsWith(today)
+);
+
+const todayDiscipline =
+  todayTrades.length > 0
+    ? Math.round(
+        (todayTrades.filter((t) => t.valid === true).length /
+          todayTrades.length) *
+          100
+      )
+    : 0;
+
+
 const streak = useMemo(() => {
   if (!trades.length) return 0;
 
@@ -129,7 +145,7 @@ const streak = useMemo(() => {
   let count = 0;
 
   for (const [, d] of days) {
-    const discipline = (d.valid / d.total) * 100;
+    const discipline = Math.round((d.valid / d.total) * 100);
 
     if (discipline >= 80) {
       count++;
@@ -221,6 +237,11 @@ const streak = useMemo(() => {
 <p style={{ textAlign: "center", marginTop: 10, color: "#aaa" }}>
   🔥 {streak} day{streak !== 1 ? "s" : ""} streak
 </p>
+
+<p style={{ textAlign: "center", marginTop: 5, color: "#aaa" }}>
+  Today: {todayDiscipline}%
+</p>
+
 
       {/* CARDS */}
       <div style={{ display: "flex", gap: 10, marginTop: 30 }}>
