@@ -336,7 +336,7 @@ const container = {
 };
 
 const title = {
-  textAlign: "center",
+  textAlign: "center", as const,
   color: "#00ffaa",
   fontSize: 40,
 };
