@@ -107,7 +107,9 @@ const streak = useMemo(() => {
   const days: Record<string, { total: number; valid: number }> = {};
 
   trades.forEach((t) => {
-    const date = new Date(t.created_at).toISOString().slice(0, 10);
+    const date = t.created_at
+  ? new Date(t.created_at).toISOString().slice(0, 10)
+  : new Date().toISOString().slice(0, 10);
 
     if (!days[date]) {
       days[date] = { total: 0, valid: 0 };
