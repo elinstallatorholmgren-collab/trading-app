@@ -242,6 +242,9 @@ setTimeout(() => setFlash("none"), 300);
           pointerEvents: "none",
           animation: "fadeFlash 0.3s ease",
           zIndex: 999,
+
+      transform: flash === "bad" ? "scale(1.01)" : "scale(1)",
+      transition: "all 0.1s ease",
         }}
       />
     )}
