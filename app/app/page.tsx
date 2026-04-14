@@ -11,6 +11,7 @@ export default function Page() {
   const [pnl, setPnl] = useState("");
   const [isPro, setIsPro] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [flash, setFlash] = useState<"none" | "bad" | "good">("none");
 
   const [checklist, setChecklist] = useState<Record<ChecklistKey, boolean>>({
     level: false,
@@ -171,7 +172,13 @@ const streak = useMemo(() => {
     };
 
     await supabase.from("trades").insert([newTrade]);
+    if (isValid) {
+  setFlash("good");
+} else {
+  setFlash("bad");
+}
 
+setTimeout(() => setFlash("none"), 300);
     setTrades((prev) => [...prev, newTrade]);
     setPnl("");
   };
@@ -222,6 +229,23 @@ const streak = useMemo(() => {
         fontFamily: "sans-serif",
       }}
     >
+    {/* 🔥 FLASH */}
+    {flash !== "none" && (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background:
+            flash === "bad"
+              ? "rgba(255, 0, 0, 0.15)"
+              : "rgba(0, 255, 170, 0.15)",
+          pointerEvents: "none",
+          animation: "fadeFlash 0.3s ease",
+          zIndex: 999,
+        }}
+      />
+    )}
+
       {/* HEADER */}
       <h1
         style={{
