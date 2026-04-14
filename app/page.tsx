@@ -328,36 +328,33 @@ export default function Page() {
 }
 
 /* STYLES */
-const container = {
+const container: React.CSSProperties = {
   minHeight: "100vh",
   background: "#020617",
   color: "#fff",
   padding: 20,
 };
 
-const title = {
-  textAlign: "center", as const,
+const title: React.CSSProperties = {
+  textAlign: "center",
   color: "#00ffaa",
   fontSize: 40,
 };
 
-const row = { display: "flex", gap: 10, marginTop: 20 };
+const row: React.CSSProperties = {
+  display: "flex",
+  gap: 10,
+  marginTop: 20,
+};
 
-const card = {
+const card: React.CSSProperties = {
   flex: 1,
   background: "#0f172a",
   padding: 20,
   borderRadius: 16,
 };
 
-const graphBox = {
-  marginTop: 30,
-  background: "#0f172a",
-  padding: 20,
-  borderRadius: 16,
-};
-
-const check = {
+const check: React.CSSProperties = {
   flex: 1,
   padding: 14,
   borderRadius: 12,
@@ -367,7 +364,7 @@ const check = {
   fontWeight: "bold",
 };
 
-const input = {
+const input: React.CSSProperties = {
   flex: 1,
   padding: 12,
   borderRadius: 10,
@@ -376,7 +373,7 @@ const input = {
   color: "#fff",
 };
 
-const btn = {
+const btn: React.CSSProperties = {
   background: "#00ffaa",
   color: "#000",
   padding: "12px 16px",
@@ -384,19 +381,19 @@ const btn = {
   border: "none",
 };
 
-const logout = {
+const logout: React.CSSProperties = {
   marginTop: 30,
   background: "transparent",
   color: "#888",
   border: "none",
 };
 
-const center = {
+const center: React.CSSProperties = {
   height: "100vh",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  flexDirection: "column" as const,
+  flexDirection: "column",
   background: "#020617",
   color: "#fff",
 };
