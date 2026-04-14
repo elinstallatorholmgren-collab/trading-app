@@ -401,10 +401,10 @@ setTimeout(() => setFlash("none"), 300);
       >
         Upgrade
       </button>
-   
+    </div>
   )}
 
-  {/* 📊 DIN GRAF */}
+  {/* 📊 GRAF */}
   <div
     style={{
       marginTop: 30,
