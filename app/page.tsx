@@ -396,7 +396,7 @@ const center = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  flexDirection: "column",
+  flexDirection: "column" as const,
   background: "#020617",
   color: "#fff",
 };
