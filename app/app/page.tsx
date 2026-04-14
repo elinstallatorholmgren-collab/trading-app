@@ -186,7 +186,7 @@ export default function Page() {
         </div>
       </div>
 
-     {/* GRAPH */}
+{/* GRAPH */}
 <div
   style={{
     marginTop: 30,
@@ -211,12 +211,12 @@ export default function Page() {
     {(() => {
       if (graphData.length === 0) return null;
 
-      // 👉 fake stretch om lite data
+      // 🔥 stretch även med få trades
       const data =
-        graphData.length < 10
-          ? Array(10)
-              .fill(graphData[0])
-              .map((_, i) => graphData[i] || graphData[graphData.length - 1])
+        graphData.length < 12
+          ? Array.from({ length: 12 }, (_, i) =>
+              graphData[i] || graphData[graphData.length - 1]
+            )
           : graphData;
 
       const pnls = data.map((d) => d.pnl);
@@ -224,6 +224,12 @@ export default function Page() {
       const max = Math.max(...pnls, 1);
       const min = Math.min(...pnls, 0);
       const range = max - min || 1;
+
+      // 🔥 padding så PnL inte ser spikig ut
+      const padding = range * 0.3;
+      const adjMin = min - padding;
+      const adjMax = max + padding;
+      const adjRange = adjMax - adjMin;
 
       const total = data.length;
 
@@ -233,8 +239,13 @@ export default function Page() {
       data.forEach((d, i) => {
         const x = (i / (total - 1)) * 100;
 
-        const yBlue = 100 - d.discipline * 0.8 - 5;
-        const yGreen = 100 - ((d.pnl - min) / range) * 100;
+        // 🔵 DISCIPLINE (stabil + inte droppa till botten)
+        const safeDiscipline = Math.max(d.discipline, 20);
+        const yBlue = 100 - safeDiscipline * 0.75;
+
+        // 🟢 PnL (balanced)
+        const yGreen =
+          100 - ((d.pnl - adjMin) / adjRange) * 100;
 
         blue += i === 0 ? `M ${x},${yBlue}` : ` L ${x},${yBlue}`;
         green += i === 0 ? `M ${x},${yGreen}` : ` L ${x},${yGreen}`;
@@ -244,28 +255,34 @@ export default function Page() {
 
       return (
         <>
-          {/* BLUE LINE */}
+          {/* 🔵 BLUE LINE (hero) */}
           <path
             d={blue}
             fill="none"
             stroke="#3b82f6"
             strokeWidth="2.5"
             strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
             style={{
-              filter: "drop-shadow(0 0 12px #3b82f6)",
+              filter:
+                "drop-shadow(0 0 12px #3b82f6) drop-shadow(0 0 20px rgba(59,130,246,0.4))",
             }}
           />
 
-          {/* AREA */}
+          {/* 🔵 AREA */}
           <path d={area} fill="url(#g)" />
 
-          {/* GREEN LINE */}
+          {/* 🟢 GREEN LINE (subtle PnL) */}
           <path
             d={green}
             fill="none"
             stroke="#00ffaa"
             strokeWidth="1"
             opacity="0.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
           />
         </>
       );
