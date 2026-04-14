@@ -227,6 +227,7 @@ setTimeout(() => setFlash("none"), 300);
         color: "#fff",
         padding: 20,
         fontFamily: "sans-serif",
+	animation: flash === "bad" ? "shake 0.25s" : "none",
       }}
     >
     {/* 🔥 FLASH */}
@@ -480,4 +481,17 @@ const card = {
   background: "#0f172a",
   padding: 20,
   borderRadius: 16,
+
+<style>
+  {`
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+      75% { transform: translateX(-2px); }
+      100% { transform: translateX(0); }
+    }
+  `}
+</style>
+
 };
