@@ -82,17 +82,23 @@ export default function Page() {
   }, [trades]);
 
   // 📈 GRAPH DATA
-  const graphData = useMemo(() => {
-    let cumulative = 0;
+const graphData = useMemo(() => {
+  let cumulative = 0;
+  let validCount = 0;
 
-    return trades.map((t) => {
-      cumulative += t.pnl;
-      return {
-        pnl: cumulative,
-        discipline: t.valid ? 100 : 0,
-      };
-    });
-  }, [trades]);
+  return trades.map((t, i) => {
+    cumulative += Number(t.pnl) || 0;
+
+    const isValid = t.valid === true;
+
+    if (isValid) validCount++;
+
+    return {
+      pnl: cumulative,
+      discipline: Math.round((validCount / (i + 1)) * 100),
+    };
+  });
+}, [trades]);
 
 const streak = useMemo(() => {
   let count = 0;
