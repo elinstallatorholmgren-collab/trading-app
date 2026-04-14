@@ -230,12 +230,8 @@ const streak = useMemo(() => {
       if (graphData.length === 0) return null;
 
       // 👉 stretch så graf alltid fyller
-      const data =
-        graphData.length < 12
-          ? Array.from({ length: 12 }, (_, i) =>
-              graphData[i] || graphData[graphData.length - 1]
-            )
-          : graphData;
+
+      const data = graphData;
 
       const pnls = data.map((d) => d.pnl);
 
@@ -255,7 +251,7 @@ const streak = useMemo(() => {
       let green = "";
 
       data.forEach((d, i) => {
-        const x = (i / (total - 1)) * 100;
+        const x = total === 1 ? 50 : (i / (total - 1)) * 100;
 
         // 🔵 DISCIPLINE (EXAKT PROCENT)
         const yBlue = 100 - d.discipline;
