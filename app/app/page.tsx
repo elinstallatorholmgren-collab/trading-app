@@ -135,6 +135,9 @@ const streak = useMemo(() => {
     const day = daysMap.get(date)!;
     day.total++;
     if (t.valid === true) day.valid++;
+
+
+
   });
 
   // 👉 gör array av UNIKA dagar
@@ -157,6 +160,16 @@ const streak = useMemo(() => {
 
   return count;
 }, [trades]);
+
+let streakColor = "#666";
+let streakGlow = "none";
+
+if (streak >= 2) streakColor = "#22c55e";
+if (streak >= 4) streakColor = "#00ffaa";
+if (streak >= 7) {
+  streakColor = "#00ffaa";
+  streakGlow = "0 0 12px rgba(0,255,170,0.7)";
+}
 
 
   // ➕ ADD TRADE
@@ -262,9 +275,20 @@ setTimeout(() => setFlash("none"), 300);
       </h1>
 
 
-<p style={{ textAlign: "center", marginTop: 10, color: "#aaa" }}>
+<p
+  style={{
+    textAlign: "center",
+    marginTop: 10,
+    color: streakColor,
+    textShadow: streakGlow,
+    fontWeight: 600,
+    letterSpacing: 1,
+    transition: "all 0.2s ease",
+  }}
+>
   🔥 {streak} day{streak !== 1 ? "s" : ""} streak
 </p>
+
 
 <p style={{ textAlign: "center", marginTop: 5, color: "#aaa" }}>
   Today: {todayDiscipline}%
@@ -284,105 +308,194 @@ setTimeout(() => setFlash("none"), 300);
         </div>
       </div>
 
+<div style={{ position: "relative" }}>
+  
+  {/* 🔒 LOCK (endast om inte pro) */}
+  {!isPro && (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        backdropFilter: "blur(6px)",
+        background: "rgba(0,0,0,0.4)",
+        zIndex: 10,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+      }}
+    >
+      <p style={{ marginBottom: 10 }}>
+        Unlock full stats
+      </p>
+
+      <button
+        onClick={async () => {
+          const res = await fetch("/api/checkout", {
+            method: "POST",
+            body: JSON.stringify({
+              userId: user.id,
+              email: user.email,
+            }),
+          });
+
+          const data = await res.json();
+          window.location.href = data.url;
+        }}
+        style={{
+          background: "#00ffaa",
+          color: "#000",
+          padding: "10px 16px",
+          borderRadius: 10,
+          border: "none",
+        }}
+      >
+        Upgrade
+      </button>
+    </div>
+
+   </div>
+  )}
+
 {/* GRAPH */}
-<div
-  style={{
-    marginTop: 30,
-    background: "#0f172a",
-    borderRadius: 16,
-    overflow: "hidden",
-  }}
->
-  <svg
-    width="100%"
-    height="220"
-    viewBox="0 0 100 100"
-    preserveAspectRatio="none"
+<div style={{ position: "relative" }}>
+
+  {/* 🔒 LOCK */}
+  {!isPro && (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        backdropFilter: "blur(6px)",
+        background: "rgba(0,0,0,0.4)",
+        zIndex: 10,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+      }}
+    >
+      <p style={{ marginBottom: 10 }}>
+        Unlock full stats
+      </p>
+
+      <button
+        onClick={async () => {
+          const res = await fetch("/api/checkout", {
+            method: "POST",
+            body: JSON.stringify({
+              userId: user.id,
+              email: user.email,
+            }),
+          });
+
+          const data = await res.json();
+          window.location.href = data.url;
+        }}
+        style={{
+          background: "#00ffaa",
+          color: "#000",
+          padding: "10px 16px",
+          borderRadius: 10,
+          border: "none",
+        }}
+      >
+        Upgrade
+      </button>
+    </div>
+  )}
+
+  {/* 📊 DIN GRAF */}
+  <div
+    style={{
+      marginTop: 30,
+      background: "#0f172a",
+      borderRadius: 16,
+      overflow: "hidden",
+    }}
   >
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
-        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-      </linearGradient>
-    </defs>
+    <svg
+      width="100%"
+      height="220"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+    >
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+        </linearGradient>
+      </defs>
 
-    {(() => {
-      if (graphData.length === 0) return null;
+      {(() => {
+        if (graphData.length === 0) return null;
 
-      // 👉 stretch så graf alltid fyller
+        const data = graphData;
 
-      const data = graphData;
+        const pnls = data.map((d) => d.pnl);
 
-      const pnls = data.map((d) => d.pnl);
+        const max = Math.max(...pnls, 1);
+        const min = Math.min(...pnls, 0);
+        const range = max - min || 1;
 
-      const max = Math.max(...pnls, 1);
-      const min = Math.min(...pnls, 0);
-      const range = max - min || 1;
+        const padding = range * 0.3;
+        const adjMin = min - padding;
+        const adjMax = max + padding;
+        const adjRange = adjMax - adjMin;
 
-      // 👉 smooth PnL (inte spikigt)
-      const padding = range * 0.3;
-      const adjMin = min - padding;
-      const adjMax = max + padding;
-      const adjRange = adjMax - adjMin;
+        const total = data.length;
 
-      const total = data.length;
+        let blue = "";
+        let green = "";
 
-      let blue = "";
-      let green = "";
+        data.forEach((d, i) => {
+          const x = total === 1 ? 50 : (i / (total - 1)) * 100;
 
-      data.forEach((d, i) => {
-        const x = total === 1 ? 50 : (i / (total - 1)) * 100;
+          const yBlue = 100 - d.discipline;
+          const yGreen =
+            100 - ((d.pnl - adjMin) / adjRange) * 100;
 
-        // 🔵 DISCIPLINE (EXAKT PROCENT)
-        const yBlue = 100 - d.discipline;
+          blue += i === 0 ? `M ${x},${yBlue}` : ` L ${x},${yBlue}`;
+          green += i === 0 ? `M ${x},${yGreen}` : ` L ${x},${yGreen}`;
+        });
 
-        // 🟢 PnL
-        const yGreen =
-          100 - ((d.pnl - adjMin) / adjRange) * 100;
+        const area = blue + ` L 100,100 L 0,100 Z`;
 
-        blue += i === 0 ? `M ${x},${yBlue}` : ` L ${x},${yBlue}`;
-        green += i === 0 ? `M ${x},${yGreen}` : ` L ${x},${yGreen}`;
-      });
+        return (
+          <>
+            <path
+              d={blue}
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+              style={{
+                filter:
+                  "drop-shadow(0 0 12px #3b82f6) drop-shadow(0 0 20px rgba(59,130,246,0.4))",
+              }}
+            />
 
-      const area = blue + ` L 100,100 L 0,100 Z`;
+            <path d={area} fill="url(#g)" />
 
-      return (
-        <>
-          {/* 🔵 BLUE LINE */}
-          <path
-            d={blue}
-            fill="none"
-            stroke="#3b82f6"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-            style={{
-              filter:
-                "drop-shadow(0 0 12px #3b82f6) drop-shadow(0 0 20px rgba(59,130,246,0.4))",
-            }}
-          />
+            <path
+              d={green}
+              fill="none"
+              stroke="#00ffaa"
+              strokeWidth="1"
+              opacity="0.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </>
+        );
+      })()}
+    </svg>
+  </div>
 
-          {/* 🔵 AREA */}
-          <path d={area} fill="url(#g)" />
-
-          {/* 🟢 GREEN LINE */}
-          <path
-            d={green}
-            fill="none"
-            stroke="#00ffaa"
-            strokeWidth="1"
-            opacity="0.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </>
-      );
-    })()}
-  </svg>
 </div>
-
 
 {/* CHECKLIST */}
 <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
