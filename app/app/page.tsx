@@ -354,7 +354,6 @@ setTimeout(() => setFlash("none"), 300);
       </button>
     </div>
 
-   </div>
   )}
 
 {/* GRAPH */}
