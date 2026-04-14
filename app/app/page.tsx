@@ -402,7 +402,7 @@ setTimeout(() => setFlash("none"), 300);
       >
         Upgrade
       </button>
-    </div>
+   
   )}
 
   {/* 📊 DIN GRAF */}
