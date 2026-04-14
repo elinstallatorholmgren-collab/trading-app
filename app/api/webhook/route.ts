@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-06-20",
+});
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,47 +12,45 @@ const supabase = createClient(
 );
 
 export async function POST(req: Request) {
-  const body = await req.text();
-  const sig = req.headers.get("stripe-signature")!;
+  const rawBody = await req.text();
+  const signature = req.headers.get("stripe-signature");
 
-  let event;
+  if (!signature) {
+    return new NextResponse("No signature", { status: 400 });
+  }
+
+  let event: Stripe.Event;
 
   try {
     event = stripe.webhooks.constructEvent(
-      body,
-      sig,
+      rawBody,
+      signature,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (err) {
-    console.error("Webhook error:", err);
-    return NextResponse.json({ error: "Webhook error" }, { status: 400 });
+  } catch (err: any) {
+    console.error("❌ Signature fail:", err.message);
+    return new NextResponse("Webhook Error", { status: 400 });
   }
 
+  // 🔥 ONLY THIS MATTERS
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const email = session.customer_email;
+    const userId = session.metadata?.userId;
 
-    console.log("PAID:", email);
+    console.log("USER FROM STRIPE:", userId);
 
-    if (email) {
-      const { data: user } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("email", email)
-        .single();
-
-      if (user) {
-        await supabase
-          .from("profiles")
-          .update({ is_pro: true })
-          .eq("id", user.id);
-
-        console.log("USER IS NOW PRO 🔥");
-      } else {
-        console.log("NO USER FOUND");
-      }
+    if (!userId) {
+      console.error("❌ userId missing");
+      return NextResponse.json({ ok: false });
     }
+
+    await supabase
+      .from("profiles")
+      .update({ is_pro: true })
+      .eq("id", userId);
+
+    console.log("✅ PRO ACTIVATED");
   }
 
   return NextResponse.json({ received: true });

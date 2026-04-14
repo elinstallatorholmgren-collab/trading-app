@@ -1,32 +1,42 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-06-20",
+});
 
-export async function POST() {
-  console.log("CHECKOUT HIT"); // debug
+export async function POST(req: Request) {
+  try {
+    const { userId, email } = await req.json();
 
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    mode: "subscription",
-    line_items: [
-      {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: "Trading Discipline Pro",
-          },
-          unit_amount: 800,
-          recurring: {
-            interval: "month",
-          },
+    console.log("CHECKOUT USER:", userId, email);
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+
+      customer_email: email,
+
+      line_items: [
+        {
+          price: "price_1TLQ4hQhOE1WJo4XtSnUn2ef", // 🔥 byt till din riktiga
+          quantity: 1,
         },
-        quantity: 1,
-      },
-    ],
-    success_url: "http://localhost:3000/app",
-    cancel_url: "http://localhost:3000/app",
-  });
+      ],
 
-  return NextResponse.json({ url: session.url });
+      success_url: "http://localhost:3000/app?success=true",
+      cancel_url: "http://localhost:3000/app",
+
+      // 🔥 DETTA VAR DIN BUG
+      metadata: {
+        userId: userId,
+      },
+    });
+
+    console.log("SESSION CREATED:", session.id);
+
+    return NextResponse.json({ url: session.url });
+  } catch (err: any) {
+    console.error("CHECKOUT ERROR:", err.message);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
