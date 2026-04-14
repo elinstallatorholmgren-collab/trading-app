@@ -3,8 +3,6 @@ import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
-});
-
 export async function POST(req: Request) {
   try {
     const { userId, email } = await req.json();
@@ -18,7 +16,7 @@ export async function POST(req: Request) {
 
       line_items: [
         {
-          price: "price_1TLQ4hQhOE1WJo4XtSnUn2ef", // 🔥 byt till din riktiga
+          price: "price_1TLQ4hQhOE1WJo4XtSnUn2ef", // din price id ✔
           quantity: 1,
         },
       ],
@@ -26,7 +24,6 @@ export async function POST(req: Request) {
       success_url: "http://localhost:3000/app?success=true",
       cancel_url: "http://localhost:3000/app",
 
-      // 🔥 DETTA VAR DIN BUG
       metadata: {
         userId: userId,
       },
