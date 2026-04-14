@@ -94,6 +94,20 @@ export default function Page() {
     });
   }, [trades]);
 
+const streak = useMemo(() => {
+  let count = 0;
+
+  for (let i = graphData.length - 1; i >= 0; i--) {
+    if (graphData[i].discipline >= 80) {
+      count++;
+    } else {
+      break;
+    }
+  }
+
+  return count;
+}, [graphData]);
+
   // ➕ ADD TRADE
   const handleAddTrade = async () => {
     if (!pnl || !user) return;
@@ -169,6 +183,10 @@ export default function Page() {
         Trading Discipline
       </h1>
 
+<p style={{ marginTop: 10, color: "#aaa" }}>
+  🔥 {streak} trades in a row
+</p>
+
       <p style={{ textAlign: "center", marginTop: 10 }}>
         🔥 {trades.length} trades in a row
       </p>
@@ -211,7 +229,7 @@ export default function Page() {
     {(() => {
       if (graphData.length === 0) return null;
 
-      // 🔥 stretch även med få trades
+      // 👉 stretch så graf alltid fyller
       const data =
         graphData.length < 12
           ? Array.from({ length: 12 }, (_, i) =>
@@ -225,7 +243,7 @@ export default function Page() {
       const min = Math.min(...pnls, 0);
       const range = max - min || 1;
 
-      // 🔥 padding så PnL inte ser spikig ut
+      // 👉 smooth PnL (inte spikigt)
       const padding = range * 0.3;
       const adjMin = min - padding;
       const adjMax = max + padding;
@@ -239,11 +257,10 @@ export default function Page() {
       data.forEach((d, i) => {
         const x = (i / (total - 1)) * 100;
 
-        // 🔵 DISCIPLINE (stabil + inte droppa till botten)
-        const safeDiscipline = Math.max(d.discipline, 20);
-        const yBlue = 100 - safeDiscipline * 0.75;
+        // 🔵 DISCIPLINE (EXAKT PROCENT)
+        const yBlue = 100 - d.discipline;
 
-        // 🟢 PnL (balanced)
+        // 🟢 PnL
         const yGreen =
           100 - ((d.pnl - adjMin) / adjRange) * 100;
 
@@ -255,7 +272,7 @@ export default function Page() {
 
       return (
         <>
-          {/* 🔵 BLUE LINE (hero) */}
+          {/* 🔵 BLUE LINE */}
           <path
             d={blue}
             fill="none"
@@ -273,7 +290,7 @@ export default function Page() {
           {/* 🔵 AREA */}
           <path d={area} fill="url(#g)" />
 
-          {/* 🟢 GREEN LINE (subtle PnL) */}
+          {/* 🟢 GREEN LINE */}
           <path
             d={green}
             fill="none"
@@ -290,33 +307,49 @@ export default function Page() {
   </svg>
 </div>
 
-      {/* CHECKLIST */}
-      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        {(["level", "confirmation", "rr"] as ChecklistKey[]).map(
-          (key) => (
-            <div
-              key={key}
-              onClick={() =>
-                setChecklist({
-                  ...checklist,
-                  [key]: !checklist[key],
-                })
-              }
-              style={{
-                flex: 1,
-                padding: 14,
-                borderRadius: 12,
-                border: "1px solid #00ffaa",
-                textAlign: "center",
-                cursor: "pointer",
-                fontWeight: "bold",
-              }}
-            >
-              {key.toUpperCase()}
-            </div>
-          )
-        )}
-      </div>
+
+{/* CHECKLIST */}
+<div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+  {(["level", "confirmation", "rr"] as ChecklistKey[]).map(
+    (key) => {
+      const active = checklist[key];
+
+      return (
+        <div
+          key={key}
+          onClick={() =>
+            setChecklist({
+              ...checklist,
+              [key]: !active,
+            })
+          }
+          style={{
+            flex: 1,
+            padding: 14,
+            borderRadius: 12,
+            border: "1px solid",
+            borderColor: active ? "#00ffaa" : "#1f2937",
+            background: active
+              ? "rgba(0,255,170,0.12)"
+              : "rgba(255,255,255,0.02)",
+            color: active ? "#00ffaa" : "#888",
+            textAlign: "center",
+            cursor: "pointer",
+            fontWeight: 600,
+            letterSpacing: 1,
+            transition: "all 0.15s ease",
+            boxShadow: active
+              ? "0 0 10px rgba(0,255,170,0.2)"
+              : "none",
+            transform: active ? "scale(1.03)" : "scale(1)",
+          }}
+        >
+          {key.toUpperCase()}
+        </div>
+      );
+    }
+  )}
+</div>
 
       {/* INPUT */}
       <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
