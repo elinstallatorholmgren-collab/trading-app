@@ -186,53 +186,92 @@ export default function Page() {
         </div>
       </div>
 
-      {/* GRAPH */}
-      <div
-        style={{
-          marginTop: 30,
-          background: "#0f172a",
-          padding: 20,
-          borderRadius: 20,
-        }}
-      >
-        <svg width="100%" height="200" viewBox="0 0 100 100">
-          <defs>
-            <linearGradient id="blueFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-            </linearGradient>
-          </defs>
+     {/* GRAPH */}
+<div
+  style={{
+    marginTop: 30,
+    background: "#0f172a",
+    borderRadius: 16,
+    overflow: "hidden",
+  }}
+>
+  <svg
+    width="100%"
+    height="220"
+    viewBox="0 0 100 100"
+    preserveAspectRatio="none"
+  >
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
+        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+      </linearGradient>
+    </defs>
 
-          {/* 🔵 Discipline (glow) */}
+    {(() => {
+      if (graphData.length === 0) return null;
+
+      // 👉 fake stretch om lite data
+      const data =
+        graphData.length < 10
+          ? Array(10)
+              .fill(graphData[0])
+              .map((_, i) => graphData[i] || graphData[graphData.length - 1])
+          : graphData;
+
+      const pnls = data.map((d) => d.pnl);
+
+      const max = Math.max(...pnls, 1);
+      const min = Math.min(...pnls, 0);
+      const range = max - min || 1;
+
+      const total = data.length;
+
+      let blue = "";
+      let green = "";
+
+      data.forEach((d, i) => {
+        const x = (i / (total - 1)) * 100;
+
+        const yBlue = 100 - d.discipline * 0.8 - 5;
+        const yGreen = 100 - ((d.pnl - min) / range) * 100;
+
+        blue += i === 0 ? `M ${x},${yBlue}` : ` L ${x},${yBlue}`;
+        green += i === 0 ? `M ${x},${yGreen}` : ` L ${x},${yGreen}`;
+      });
+
+      const area = blue + ` L 100,100 L 0,100 Z`;
+
+      return (
+        <>
+          {/* BLUE LINE */}
           <path
-            d={disciplinePath}
+            d={blue}
             fill="none"
             stroke="#3b82f6"
-            strokeWidth="2"
-            style={{ filter: "drop-shadow(0 0 6px #3b82f6)" }}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            style={{
+              filter: "drop-shadow(0 0 12px #3b82f6)",
+            }}
           />
 
-          {/* 🟢 PnL fill */}
-          <path
-            d={`${pnlPath} L 100,100 L 0,100 Z`}
-            fill="url(#blueFill)"
-          />
+          {/* AREA */}
+          <path d={area} fill="url(#g)" />
 
-          {/* 🟢 PnL line */}
+          {/* GREEN LINE */}
           <path
-            d={pnlPath}
+            d={green}
             fill="none"
             stroke="#00ffaa"
-            strokeWidth="2"
+            strokeWidth="1"
+            opacity="0.6"
           />
-        </svg>
-
-        {!isPro && (
-          <p style={{ color: "#888", marginTop: 10 }}>
-            🔒 Upgrade to Pro for full history & analytics
-          </p>
-        )}
-      </div>
+        </>
+      );
+    })()}
+  </svg>
+</div>
 
       {/* CHECKLIST */}
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
