@@ -443,18 +443,28 @@ setTimeout(() => setFlash("none"), 300);
           }}
         />
 
-        <button
-          onClick={handleAddTrade}
-          style={{
-            background: isValid ? "#00ffaa" : "#ff4d4f",
-            color: "#000",
-            padding: "12px 16px",
-            borderRadius: 10,
-            border: "none",
-          }}
-        >
-          {isValid ? "Log trade" : "Break"}
-        </button>
+<button
+  onClick={handleAddTrade}
+  style={{
+    background: isValid ? "#00ffaa" : "#ff4d4f",
+    color: "#000",
+    padding: "12px 16px",
+    borderRadius: 10,
+    border: "none",
+
+    // 🔥 glow när valid
+    boxShadow: isValid
+      ? "0 0 12px rgba(0,255,170,0.6)"
+      : "none",
+
+    // 🔥 liten pulse när valid
+    transform: isValid ? "scale(1.03)" : "scale(1)",
+    transition: "all 0.15s ease",
+  }}
+>
+  {isValid ? "Log trade" : "Break"}
+</button>
+
       </div>
 
       {/* LOGOUT */}
