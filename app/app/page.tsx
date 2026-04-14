@@ -218,9 +218,9 @@ const streak = useMemo(() => {
       </h1>
 
 
-      <p style={{ textAlign: "center", marginTop: 10 }}>
-        🔥 {trades.length} trades in a row
-      </p>
+<p style={{ textAlign: "center", marginTop: 10, color: "#aaa" }}>
+  🔥 {streak} day{streak !== 1 ? "s" : ""} streak
+</p>
 
       {/* CARDS */}
       <div style={{ display: "flex", gap: 10, marginTop: 30 }}>
