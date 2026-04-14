@@ -103,30 +103,32 @@ const graphData = useMemo(() => {
 const streak = useMemo(() => {
   if (!trades.length) return 0;
 
-  // 👉 gruppera trades per dag
-  const days: Record<string, { total: number; valid: number }> = {};
+  // 👉 skapa map per dag (EN gång per dag)
+  const daysMap = new Map<string, { total: number; valid: number }>();
 
   trades.forEach((t) => {
     const date = t.created_at
-  ? new Date(t.created_at).toISOString().slice(0, 10)
-  : new Date().toISOString().slice(0, 10);
+      ? new Date(t.created_at).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
 
-    if (!days[date]) {
-      days[date] = { total: 0, valid: 0 };
+    if (!daysMap.has(date)) {
+      daysMap.set(date, { total: 0, valid: 0 });
     }
 
-    days[date].total++;
-    if (t.valid === true) days[date].valid++;
+    const day = daysMap.get(date)!;
+    day.total++;
+    if (t.valid === true) day.valid++;
   });
 
-  // 👉 sortera dagar senaste först
-  const sortedDays = Object.entries(days)
-    .sort(([a], [b]) => (a > b ? -1 : 1));
+  // 👉 gör array av UNIKA dagar
+  const days = Array.from(daysMap.entries()).sort(
+    ([a], [b]) => (a > b ? -1 : 1)
+  );
 
-  // 👉 räkna streak
+  // 👉 streak = antal dagar i rad ≥80%
   let count = 0;
 
-  for (const [, d] of sortedDays) {
+  for (const [, d] of days) {
     const discipline = (d.valid / d.total) * 100;
 
     if (discipline >= 80) {
@@ -138,6 +140,7 @@ const streak = useMemo(() => {
 
   return count;
 }, [trades]);
+
 
   // ➕ ADD TRADE
   const handleAddTrade = async () => {
