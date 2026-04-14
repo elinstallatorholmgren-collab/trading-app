@@ -101,10 +101,33 @@ const graphData = useMemo(() => {
 }, [trades]);
 
 const streak = useMemo(() => {
+  if (!trades.length) return 0;
+
+  // 👉 gruppera trades per dag
+  const days: Record<string, { total: number; valid: number }> = {};
+
+  trades.forEach((t) => {
+    const date = new Date(t.created_at).toISOString().slice(0, 10);
+
+    if (!days[date]) {
+      days[date] = { total: 0, valid: 0 };
+    }
+
+    days[date].total++;
+    if (t.valid === true) days[date].valid++;
+  });
+
+  // 👉 sortera dagar senaste först
+  const sortedDays = Object.entries(days)
+    .sort(([a], [b]) => (a > b ? -1 : 1));
+
+  // 👉 räkna streak
   let count = 0;
 
-  for (let i = graphData.length - 1; i >= 0; i--) {
-    if (graphData[i].discipline >= 80) {
+  for (const [, d] of sortedDays) {
+    const discipline = (d.valid / d.total) * 100;
+
+    if (discipline >= 80) {
       count++;
     } else {
       break;
@@ -112,7 +135,7 @@ const streak = useMemo(() => {
   }
 
   return count;
-}, [graphData]);
+}, [trades]);
 
   // ➕ ADD TRADE
   const handleAddTrade = async () => {
@@ -189,9 +212,6 @@ const streak = useMemo(() => {
         Trading Discipline
       </h1>
 
-<p style={{ marginTop: 10, color: "#aaa" }}>
-  🔥 {streak} trades in a row
-</p>
 
       <p style={{ textAlign: "center", marginTop: 10 }}>
         🔥 {trades.length} trades in a row
