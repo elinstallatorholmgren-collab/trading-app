@@ -68,19 +68,7 @@ export default function Page() {
     let total = 0;
     let valid = 0;
 
-    trades.forEach((t) => {
-      total += t.pnl;
-      if (t.valid) valid++;
-    });
-
-    return {
-      pnl: total,
-      discipline:
-        trades.length > 0
-          ? Math.round((valid / trades.length) * 100)
-          : 0,
-    };
-  }, [trades]);
+trades.forEach((t)
 
   // 📈 GRAPH DATA
 const graphData = useMemo(() => {
