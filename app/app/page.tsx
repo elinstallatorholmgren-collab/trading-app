@@ -101,11 +101,14 @@ const graphData = useMemo(() => {
   });
 }, [trades]);
 
-const today = new Date().toISOString().slice(0, 10);
+const today = new Date().toLocaleDateString("sv-SE");
 
-const todayTrades = trades.filter((t) =>
-  (t.created_at || "").startsWith(today)
-);
+const todayTrades = trades.filter((t) => {
+  if (!t.created_at) return false;
+
+  const d = new Date(t.created_at).toLocaleDateString("sv-SE");
+  return d === today;
+});
 
 const todayDiscipline =
   todayTrades.length > 0
@@ -115,7 +118,6 @@ const todayDiscipline =
           100
       )
     : 0;
-
 
 const streak = useMemo(() => {
   if (!trades.length) return 0;
