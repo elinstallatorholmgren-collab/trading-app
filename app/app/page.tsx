@@ -176,15 +176,17 @@ if (streak >= 7) {
 
   // ➕ ADD TRADE
   const handleAddTrade = async () => {
+
     if (!pnl || !user) return;
 
     const value = Number(pnl);
 
-    const newTrade = {
-      pnl: value,
-      valid: isValid,
-      user_id: user.id,
-    };
+const newTrade = {
+  pnl: value,
+  valid: isValid,
+  user_id: user.id,
+  created_at: new Date().toISOString(), // 👈 LÄGG TILL DENNA RAD
+};
 
     await supabase.from("trades").insert([newTrade]);
     if (isValid) {
