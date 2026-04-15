@@ -146,7 +146,7 @@ const streak = useMemo(() => {
     } else {
       break;
     }
-  }
+  };
 
   return count;
 }, [trades]);
