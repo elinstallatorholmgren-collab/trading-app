@@ -63,12 +63,24 @@ export default function Page() {
     loadTrades();
   }, [user]);
 
-  // 📈 STATS
+ // 📈 STATS
   const stats = useMemo(() => {
     let total = 0;
     let valid = 0;
 
-trades.forEach((t)
+    trades.forEach((t) => {
+      total += t.pnl;
+      if (t.valid) valid++;
+    });
+
+    return {
+      pnl: total,
+      discipline:
+        trades.length > 0
+          ? Math.round((valid / trades.length) * 100)
+          : 0,
+    };
+  }, [trades]);
 
   // 📈 GRAPH DATA
 const graphData = useMemo(() => {
@@ -349,52 +361,6 @@ setTimeout(() => setFlash("none"), 300);
   )}
 
 {/* GRAPH */}
-<div style={{ position: "relative" }}>
-
-  {/* 🔒 LOCK */}
-  {!isPro && (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        backdropFilter: "blur(6px)",
-        background: "rgba(0,0,0,0.4)",
-        zIndex: 10,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column",
-      }}
-    >
-      <p style={{ marginBottom: 10 }}>
-        Unlock full stats
-      </p>
-
-      <button
-        onClick={async () => {
-          const res = await fetch("/api/checkout", {
-            method: "POST",
-            body: JSON.stringify({
-              userId: user.id,
-              email: user.email,
-            }),
-          });
-
-          const data = await res.json();
-          window.location.href = data.url;
-        }}
-        style={{
-          background: "#00ffaa",
-          color: "#000",
-          padding: "10px 16px",
-          borderRadius: 10,
-          border: "none",
-        }}
-      >
-        Upgrade
-      </button>
-    </div>
-  )}
 
   {/* 📊 GRAF */}
   <div
