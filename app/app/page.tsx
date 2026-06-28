@@ -554,7 +554,7 @@ style={{
 
   cursor: "pointer",
 
-  boxShadow: "0 0 12px rgba(0,255,170,0.6)",
+ boxShadow: "0 0 8px rgba(0,255,170,0.25)",
 
   transform: "scale(1)",
 
