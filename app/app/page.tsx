@@ -12,6 +12,7 @@ export default function Page() {
   const [isPro, setIsPro] = useState(false);
   const [loading, setLoading] = useState(true);
   const [flash, setFlash] = useState<"none" | "bad" | "good">("none");
+  const [tradeStarted, setTradeStarted] = useState(false);
 
   const [checklist, setChecklist] = useState<Record<ChecklistKey, boolean>>({
     level: false,
@@ -463,12 +464,14 @@ setTimeout(() => setFlash("none"), 300);
       return (
         <div
           key={key}
-          onClick={() =>
-            setChecklist({
-              ...checklist,
-              [key]: !active,
-            })
-          }
+onClick={() => {
+  if (tradeStarted) return;
+
+  setChecklist({
+    ...checklist,
+    [key]: !active,
+  });
+}}
           style={{
             flex: 1,
             padding: 14,
@@ -480,7 +483,10 @@ setTimeout(() => setFlash("none"), 300);
               : "rgba(255,255,255,0.02)",
             color: active ? "#00ffaa" : "#888",
             textAlign: "center",
-            cursor: "pointer",
+
+opacity: tradeStarted ? 0.7 : 1,
+cursor: tradeStarted ? "default" : "pointer",
+
             fontWeight: 600,
             letterSpacing: 1,
             transition: "all 0.15s ease",
@@ -498,41 +504,66 @@ setTimeout(() => setFlash("none"), 300);
 </div>
 
       {/* INPUT */}
-      <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
-        <input
-          value={pnl}
-          onChange={(e) => setPnl(e.target.value)}
-          placeholder="+100 / -50"
-          style={{
-            flex: 1,
-            padding: 12,
-            borderRadius: 10,
-            border: "none",
-            background: "#111",
-            color: "#fff",
-          }}
-        />
+<div
+  style={{
+    marginTop: 20,
+    display: "flex",
+    gap: 10,
+  }}
+>
+
+     <input
+  value={pnl}
+  onChange={(e) => setPnl(e.target.value)}
+  placeholder={
+    tradeStarted
+      ? "+100 / -50"
+      : "Commit setup first"
+  }
+  disabled={!tradeStarted}
+  style={{
+    flex: 1,
+    padding: 12,
+    borderRadius: 10,
+    border: "none",
+    background: "#111",
+    color: "#fff",
+    opacity: tradeStarted ? 1 : 0.5,
+    cursor: tradeStarted ? "text" : "not-allowed",
+  }}
+/>
 
 <button
-  onClick={handleAddTrade}
+  onClick={() => {
+
+    if (!tradeStarted) {
+      setTradeStarted(true);
+      return;
+    }
+
+    handleAddTrade();
+    setTradeStarted(false);
+  }}
+  disabled={false}
   style={{
     background: isValid ? "#00ffaa" : "#ff4d4f",
     color: "#000",
     padding: "12px 16px",
     borderRadius: 10,
     border: "none",
+    cursor: isValid ? "pointer" : "not-allowed",
 
-    // 🔥 glow när valid
     boxShadow: isValid
       ? "0 0 12px rgba(0,255,170,0.6)"
       : "none",
 
-    // 🔥 liten pulse när valid
     transform: isValid ? "scale(1.03)" : "scale(1)",
     transition: "all 0.15s ease",
   }}
 >
-  {isValid ? "Log trade" : "Break"}
+{tradeStarted
+  ? "Finish Trade"
+  : "Commit Setup"}
 </button>
 
       </div>
