@@ -545,21 +545,21 @@ cursor: tradeStarted ? "default" : "pointer",
     setTradeStarted(false);
   }}
   disabled={false}
-  style={{
-    background: isValid ? "#00ffaa" : "#ff4d4f",
-    color: "#000",
-    padding: "12px 16px",
-    borderRadius: 10,
-    border: "none",
-    cursor: isValid ? "pointer" : "not-allowed",
+style={{
+  background: tradeStarted ? "#00ffaa" : "#2563eb",
+  color: "#000",
+  padding: "12px 16px",
+  borderRadius: 10,
+  border: "none",
 
-    boxShadow: isValid
-      ? "0 0 12px rgba(0,255,170,0.6)"
-      : "none",
+  cursor: "pointer",
 
-    transform: isValid ? "scale(1.03)" : "scale(1)",
-    transition: "all 0.15s ease",
-  }}
+  boxShadow: "0 0 12px rgba(0,255,170,0.6)",
+
+  transform: "scale(1)",
+
+  transition: "all 0.15s ease",
+}}
 >
 {tradeStarted
   ? "Finish Trade"
